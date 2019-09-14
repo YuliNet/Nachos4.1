@@ -200,14 +200,14 @@ DEFINES =  -DFILESYS_STUB -DRDATA -DSIM_FIX -DTUT
 # break the thread system.  You might want to use -fno-inline if
 # you need to call some inline functions from the debugger.
 
-CFLAGS = -ftemplate-depth-100 -Wno-deprecated -g -Wall -fwritable-strings $(INCPATH) $(DEFINES) $(HOSTCFLAGS) -DCHANGED
+CFLAGS = -ftemplate-depth-100 -Wno-deprecated -g -Wall $(INCPATH) $(DEFINES) $(HOSTCFLAGS) -DCHANGED -fpermissive -m32
 LDFLAGS =
 
 #####################################################################
 CPP=/lib/cpp
 CC = g++ 
-LD = g++
-AS = as
+LD = g++ -m32
+AS = as --32
 RM = /bin/rm
 
 INCPATH = -I../network -I../filesys -I../userprog -I../threads -I../machine -I../lib
