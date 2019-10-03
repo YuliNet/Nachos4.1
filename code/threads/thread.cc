@@ -35,6 +35,10 @@ const int STACK_FENCEPOST = 0xdedbeef;
 
 Thread::Thread(char* threadName)
 {
+    if (kernel->numOfThread >= 128)
+    {
+        throw "The number of threads has reached the upper limit";
+    }
     name = threadName;
     stackTop = NULL;
     stack = NULL;
@@ -45,6 +49,9 @@ Thread::Thread(char* threadName)
 					// of machine registers
     }
     space = NULL;
+    pid = kernel->numOfThread;
+    kernel->numOfThread++;
+    kernel->threadList->Append(this);
 }
 
 //----------------------------------------------------------------------
@@ -66,6 +73,8 @@ Thread::~Thread()
     ASSERT(this != kernel->currentThread);
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
+    kernel->numOfThread--;
+    kernel->threadList->Remove(this);
 }
 
 //----------------------------------------------------------------------
@@ -427,10 +436,38 @@ Thread::SelfTest()
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
 
-    Thread *t = new Thread("forked thread");
+    /*
+    for (int i = 0; i < 128; i++)
+    {
+        Thread* t;
+        try
+        {
+                t = new Thread("forked thread");
+        }
+        catch(const char* msg)
+        {
+            cerr << msg << endl;
+        }
+        // t->setPid(666);
+        int pid = t->getPid();
+        DEBUG(dbgThread, "Thread pid :" << pid);
 
-    t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
-    kernel->currentThread->Yield();
-    SimpleThread(0);
+    // t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
+    // kernel->currentThread->Yield();
+    // SimpleThread(0);
+    }
+    */
+   /*
+   Thread * t = new Thread("a");
+   cout << kernel->threadList->NumInList() << endl;
+   delete t;
+   cout << kernel->threadList->NumInList() << endl;
+   */
+  Thread *t = new Thread("forked thread");
+  t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
+  kernel->currentThread->Yield();
+  SimpleThread(0);
+  kernel->TS();
+
 }
 

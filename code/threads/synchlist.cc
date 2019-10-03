@@ -128,3 +128,17 @@ SynchList<T>::SelfTest(T val)
     }
     delete selfTestPing;
 }
+
+//----------------------------------------------------------------------
+// SynchList<T>::Remove
+//      Remove specific item from the list. 
+//----------------------------------------------------------------------
+
+template <class T>
+void
+SynchList<T>::Remove(T item)
+{
+    lock->Acquire();			// enforce mutual exclusion
+    list->Remove(item);
+    lock->Release();
+}

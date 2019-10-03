@@ -41,6 +41,7 @@ class Kernel {
 
     void NetworkTest();         // interactive 2-machine network test
     
+    void TS();   //Thread Status，显示当前系统中所有线程的信息和状态
 // These are public for notational convenience; really, 
 // they're global variables used everywhere.
 
@@ -58,6 +59,10 @@ class Kernel {
     PostOfficeOutput *postOfficeOut;
 
     int hostName;               // machine identifier
+
+    int numOfThread;  //当前系统中所有线程的数量
+
+    List<Thread *> *threadList;
 
   private:
     bool randomSlice;		// enable pseudo-random time slicing

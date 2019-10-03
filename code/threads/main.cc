@@ -200,7 +200,7 @@ main(int argc, char **argv)
         if (strcmp(argv[i], "-d") == 0) {
 	    ASSERT(i + 1 < argc);   // next argument is debug string
             debugArg = argv[i + 1];
-	    i++;
+	    i++;    //为何这里不直接i+2?
 	}
 	else if (strcmp(argv[i], "-z") == 0) {
             cout << copyright << "\n";
@@ -246,7 +246,7 @@ main(int argc, char **argv)
 	else if (strcmp(argv[i], "-u") == 0) {
             cout << "Partial usage: nachos [-z -d debugFlags]\n";
             cout << "Partial usage: nachos [-x programName]\n";
-	    cout << "Partial usage: nachos [-K] [-C] [-N]\n";
+	        cout << "Partial usage: nachos [-K] [-C] [-N]\n";
 #ifndef FILESYS_STUB
             cout << "Partial usage: nachos [-cp UnixFile NachosFile]\n";
             cout << "Partial usage: nachos [-p fileName] [-r fileName]\n";
@@ -254,7 +254,7 @@ main(int argc, char **argv)
 #endif //FILESYS_STUB
 	}
 
-    }
+    }   //end of for
     debug = new Debug(debugArg);
     
     DEBUG(dbgThread, "Entering main");
@@ -265,9 +265,11 @@ main(int argc, char **argv)
     ::tut::runner.get().run_tests(); //run all unit tests
 #endif 
     
+    DEBUG(dbgThread, "before new kernel");
     kernel = new Kernel(argc, argv);
-
+    DEBUG(dbgThread, "after new kernel");
     kernel->Initialize();
+    DEBUG(dbgThread, "after kernel initialize");
 
     CallOnUserAbort(Cleanup);		// if user hits ctl-C
 

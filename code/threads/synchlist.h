@@ -28,14 +28,16 @@ class SynchList {
 
     void Append(T item);	// append item to the end of the list,
 				// and wake up any thread waiting in remove
-
+    
+    void Remove(T item); 	// Remove specific item from list
+    
     T RemoveFront();		// remove the first item from the front of
 				// the list, waiting if the list is empty
 
     void Apply(void (*f)(T)); // apply function to all elements in list
 
     void SelfTest(T value);	// test the SynchList implementation
-    
+
   private:
     List<T> *list;		// the list of things
     Lock *lock;			// enforce mutual exclusive access to the list
