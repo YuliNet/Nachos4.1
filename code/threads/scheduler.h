@@ -24,8 +24,9 @@ class Scheduler {
 
     void ReadyToRun(Thread* thread);	
     				// Thread can be dispatched.
-    Thread* FindNextToRun();	// Dequeue first thread on the ready 
-				// list, if any, and return thread.
+    Thread* FindNextToRun();	// return first thread on the ready 
+				// list, if any, NOT DEQUEUE!!!
+    void RemoveFront(); //dequeue readyList, use with FindNextToRun
     void Run(Thread* nextThread, bool finishing);
     				// Cause nextThread to start running
     void CheckToBeDestroyed();// Check if thread that had been
@@ -35,8 +36,8 @@ class Scheduler {
     // SelfTest for scheduler is implemented in class Thread
     
   private:
-    List<Thread *> *readyList;  // queue of threads that are ready to run,
-				// but not running
+    SortedList<Thread *> *readyList;  // queue of threads that are ready to run,
+				// but not running  按照线程优先级进行排序
     Thread *toBeDestroyed;	// finishing thread to be destroyed
     				// by the next thread that runs
 };

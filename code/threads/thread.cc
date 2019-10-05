@@ -50,6 +50,7 @@ Thread::Thread(char* threadName)
     }
     space = NULL;
     pid = kernel->numOfThread;
+    priority = 5;
     kernel->numOfThread++;
     kernel->threadList->Append(this);
 }
@@ -219,6 +220,7 @@ Thread::Yield ()
     
     nextThread = kernel->scheduler->FindNextToRun();
     if (nextThread != NULL) {
+    kernel->scheduler->RemoveFront();
 	kernel->scheduler->ReadyToRun(this);
 	kernel->scheduler->Run(nextThread, FALSE);
     }
@@ -260,6 +262,7 @@ Thread::Sleep (bool finishing)
 	kernel->interrupt->Idle();	// no one to run, wait for an interrupt
     
     // returns when it's time for us to run
+    kernel->scheduler->RemoveFront();
     kernel->scheduler->Run(nextThread, finishing); 
 }
 
@@ -415,14 +418,30 @@ Thread::RestoreUserState()
 //----------------------------------------------------------------------
 
 static void
+codeOfB(int which)
+{
+    for (int i = 0; i < 20; i++)
+    {
+        kernel->interrupt->OneTick();
+        cout << which << endl;
+    }
+}
+
+static void
 SimpleThread(int which)
 {
-    int num;
-    
-    for (num = 0; num < 5; num++) {
-	cout << "*** thread " << which << " looped " << num << " times\n";
-        kernel->currentThread->Yield();
+    Thread* b = new Thread("priority_3");
+    b->setPriority(3);
+    b->Fork((VoidFunctionPtr) codeOfB, (void *) 3);
+    for (int i = 0; i < 20; i++)
+    {
+        kernel->interrupt->OneTick();
+        cout << which << endl;
     }
+    // for (num = 0; num < 5; num++) {
+	// cout << "*** thread " << which << " looped " << num << " times\n";
+    //     kernel->currentThread->Yield();
+    // }
 }
 
 //----------------------------------------------------------------------
@@ -436,38 +455,25 @@ Thread::SelfTest()
 {
     DEBUG(dbgThread, "Entering Thread::SelfTest");
 
-    /*
-    for (int i = 0; i < 128; i++)
-    {
-        Thread* t;
-        try
-        {
-                t = new Thread("forked thread");
-        }
-        catch(const char* msg)
-        {
-            cerr << msg << endl;
-        }
-        // t->setPid(666);
-        int pid = t->getPid();
-        DEBUG(dbgThread, "Thread pid :" << pid);
-
-    // t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
+    // for (int i = 0; i < 5; i++)
+    // {
+    //     Thread* t = new Thread("forked thread");
+    //     t->setPriority(i);
+    //     t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
+    // }
+    // kernel->scheduler->Print();
     // kernel->currentThread->Yield();
     // SimpleThread(0);
-    }
-    */
-   /*
-   Thread * t = new Thread("a");
-   cout << kernel->threadList->NumInList() << endl;
-   delete t;
-   cout << kernel->threadList->NumInList() << endl;
-   */
-  Thread *t = new Thread("forked thread");
-  t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
-  kernel->currentThread->Yield();
-  SimpleThread(0);
-  kernel->TS();
+    // kernel->scheduler->Print();
+
+    Thread* a = new Thread("priority_4");
+    a->setPriority(4);
+    a->Fork((VoidFunctionPtr) SimpleThread, (void *) 4);
+    kernel->currentThread->Yield();
+    // Thread* b = new Thread("priority_2");
+    // b->setPriority(2);
+    // b->Fork((VoidFunctionPtr) SimpleThread, (void *) 2);
+    // kernel->currentThread->Yield();
 
 }
 

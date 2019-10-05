@@ -22,7 +22,8 @@
 
 Alarm::Alarm(bool doRandom)
 {
-    timer = new Timer(doRandom, this);
+    timer = new Timer(doRandom, this);  //Timer(bool doRandom, CallBackObj* tocall), 
+                                        // 这里设置tocall = this，所以timer->CallBack() == tocall->CallBack()将会调用this->CallBack()
 }
 
 //----------------------------------------------------------------------
@@ -47,9 +48,18 @@ void
 Alarm::CallBack() 
 {
     Interrupt *interrupt = kernel->interrupt;
+    Scheduler *scheduler = kernel->scheduler;
+    Thread *current = kernel->currentThread;
+    Thread *front = scheduler->FindNextToRun();
     MachineStatus status = interrupt->getStatus();
     
     if (status != IdleMode) {
-	interrupt->YieldOnReturn();
+        DEBUG(dbgThread,"*****CallBack*****");
+        interrupt->DumpState();
+        if (front->getPriority() < current->getPriority())
+        {
+            interrupt->YieldOnReturn();
+        }
+        
     }
 }

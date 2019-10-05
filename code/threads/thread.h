@@ -103,10 +103,13 @@ class Thread {
     void setStatus(ThreadStatus st) { status = st; }
     ThreadStatus getStatus() { return status; }
     char* getName() { return (name); }
-    void Print() { cout << name; }
+    void Print() { cout << name << " priority: " << priority << endl; }
     void SelfTest();		// test whether thread impl is working
     void setPid(int pid) { this->pid = pid; }
     int getPid() { return pid; }
+    
+    void setPriority(int pri) { this->priority = pri; }
+    int getPriority() { return priority; }
 
   private:
     // some of the private data for this class is listed above
@@ -118,6 +121,7 @@ class Thread {
     char* name;
     //int uid;
     int pid;
+    unsigned int priority; //数字越小代表优先级越高,默认为0
 
     void StackAllocate(VoidFunctionPtr func, void *arg);
     				// Allocate a stack for thread.

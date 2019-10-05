@@ -99,7 +99,7 @@ Kernel::Initialize()
     stats = new Statistics();		// collect statistics
     interrupt = new Interrupt;		// start up interrupt handling
     scheduler = new Scheduler();	// initialize the ready queue
-    alarm = new Alarm(randomSlice);	// start up time slicing
+    alarm = new Alarm(randomSlice);	// start up time slicing，这里相当于设置好了时钟中断机制
     machine = new Machine(debugUserProg);
     synchConsoleIn = new SynchConsoleInput(consoleIn); // input from stdin
     synchConsoleOut = new SynchConsoleOutput(consoleOut); // output to stdout
@@ -254,7 +254,7 @@ Kernel::TS()
     ListIterator<Thread*> *iter = new ListIterator<Thread*>(kernel->threadList);
     for(; !iter->IsDone(); iter->Next())
     {
-        cout << "pid : " << iter->Item()->getPid()<< " status : " << iter->Item()->getStatus() << endl;
+        cout << "name : " << iter->Item()->getName()<< " pid : " << iter->Item()->getPid()<< " status : " << iter->Item()->getStatus() << endl;
     }
 }
 

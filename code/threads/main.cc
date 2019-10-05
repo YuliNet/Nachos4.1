@@ -265,11 +265,8 @@ main(int argc, char **argv)
     ::tut::runner.get().run_tests(); //run all unit tests
 #endif 
     
-    DEBUG(dbgThread, "before new kernel");
     kernel = new Kernel(argc, argv);
-    DEBUG(dbgThread, "after new kernel");
     kernel->Initialize();
-    DEBUG(dbgThread, "after kernel initialize");
 
     CallOnUserAbort(Cleanup);		// if user hits ctl-C
 
