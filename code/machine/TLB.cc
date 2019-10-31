@@ -33,6 +33,7 @@ int TLB::translate(int virtAddr)
     {
         if (tlbPtr[TLBI][i].valid && (tlbPtr[TLBI][i].Tag == TLBT))
         {
+            tlbPtr[TLBI][i].lru = 0;
             physAddr = tlbPtr[TLBI][i].PPN * PageSize + offset;
             break;
         }
@@ -49,16 +50,33 @@ void TLB::update(int virtAddr, int pageFrame)
     TLBI = vpn & 0x3;
     TLBT = (vpn >> 2) & 0x3FFFFFFF;
 
+    //替换的下标
+    int index = 0;
     for (int i = 0; i < 4; i++)
     {
-        if (!tlbPtr[TLBI][i].valid)
+        if (tlbPtr[TLBI][i].valid)
         {
-            tlbPtr[TLBI][i].PPN = pageFrame;
-            tlbPtr[TLBI][i].Tag = TLBT;
-            tlbPtr[TLBI][i].valid = true;
-            return;
+            tlbPtr[TLBI][i].lru++;
+            if (tlbPtr[TLBI][i].lru > tlbPtr[TLBI][index].lru)
+                index = i;
+        }
+        else
+        {
+            index = i;
+            break;
         }
     }
+    if (tlbPtr[TLBI][index].valid)
+    {
+        DEBUG(dbgLru, "replace tlb ");
 
-    //TODO:更新TLB
+    }
+    else
+    {
+        DEBUG(dbgLru, "update tlb ");
+    }
+    tlbPtr[TLBI][index].PPN = pageFrame;
+    tlbPtr[TLBI][index].Tag = TLBT;
+    tlbPtr[TLBI][index].valid = true;
+    tlbPtr[TLBI][index].lru = 0;
 }

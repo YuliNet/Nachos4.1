@@ -50,6 +50,8 @@ public:
   int PPN;
   bool valid;
 
+  unsigned int lru;
+
   TLBEntry()
   {
     valid = FALSE;

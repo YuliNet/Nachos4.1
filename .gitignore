@@ -1,5 +1,7 @@
 # Prerequisites
+*nachos
 *.d
+*.dep
 
 # Compiled Object files
 *.slo
