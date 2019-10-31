@@ -1,7 +1,8 @@
 #include "translate.h"
-
+#include "debug.h"
 TLB::TLB()
 {
+    //4路相连，16个Entry
     for (int i = 0; i < 4; i++)
     {
         tlbPtr[i] = new TLBEntry[4];
@@ -11,7 +12,9 @@ TLB::TLB()
 TLB::~TLB()
 {
     for (int i = 0; i < 4; i++)
+    {
         delete[] tlbPtr[i];
+    }
 }
 
 int TLB::translate(int virtAddr)

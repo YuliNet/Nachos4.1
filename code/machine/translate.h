@@ -59,9 +59,7 @@ public:
 class TLB
 {
 public:
-  TLBEntry **tlbPtr;
-
-  //默认为4路相连,16个Entry
+  TLBEntry* tlbPtr[4];
 
   TLB();
   ~TLB();

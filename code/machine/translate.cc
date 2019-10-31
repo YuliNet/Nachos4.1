@@ -216,6 +216,7 @@ Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 		int res = tlb->translate(virtAddr);
 		if (res >= 0)
 		{
+			DEBUG(dbgAddr, "use TLB ");
 			*physAddr = res;
 			return NoException;
 		}
@@ -250,7 +251,11 @@ Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 	}
 
 	//更新TLB
-	tlb->update(virtAddr, pageFrame);
+	if (tlb!=NULL)
+	{
+		DEBUG(dbgAddr, "update tlb ");
+		tlb->update(virtAddr, pageFrame);
+	}
 
 	entry->use = TRUE; // set the use, dirty bits
 	if (writing)

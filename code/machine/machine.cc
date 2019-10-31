@@ -52,7 +52,7 @@ void CheckEndian()
 //		is executed.
 //----------------------------------------------------------------------
 
-Machine::Machine(bool debug)
+Machine::Machine(bool debug_)
 {
     int i;
 
@@ -69,7 +69,7 @@ Machine::Machine(bool debug)
     pageTable = NULL;
 #endif
 
-    singleStep = debug;
+    singleStep = debug_;
     CheckEndian();
 }
 
