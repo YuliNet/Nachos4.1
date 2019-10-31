@@ -200,7 +200,7 @@ main(int argc, char **argv)
         if (strcmp(argv[i], "-d") == 0) {
 	    ASSERT(i + 1 < argc);   // next argument is debug string
             debugArg = argv[i + 1];
-	    i++;    //为何这里不直接i+2?
+	    i++;
 	}
 	else if (strcmp(argv[i], "-z") == 0) {
             cout << copyright << "\n";

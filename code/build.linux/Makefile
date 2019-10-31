@@ -249,7 +249,8 @@ MACHINE_H = ../machine/callback.h\
 	../machine/mipssim.h\
 	../machine/translate.h\
 	../machine/network.h\
-	../machine/disk.h
+	../machine/disk.h\
+	../machine/memory.h
 
 MACHINE_C = ../machine/interrupt.cc\
 	../machine/stats.cc\
@@ -259,10 +260,11 @@ MACHINE_C = ../machine/interrupt.cc\
 	../machine/mipssim.cc\
 	../machine/translate.cc\
 	../machine/network.cc\
-	../machine/disk.cc
+	../machine/disk.cc\
+	../machine/TLB.cc
 
 MACHINE_O = interrupt.o stats.o timer.o console.o machine.o mipssim.o\
-	translate.o network.o disk.o
+	translate.o network.o disk.o TLB.o
 
 THREAD_H = ../threads/alarm.h\
 	../threads/kernel.h\
