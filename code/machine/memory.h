@@ -11,6 +11,7 @@ const int PageSize = 128; 		// set the page size equal to
 // available on the simulated machine.
 //
 const int NumPhysPages = 128;
+const int NumPhysPagesPerThread = 32;
 
 const int MemorySize = (NumPhysPages * PageSize);
 
