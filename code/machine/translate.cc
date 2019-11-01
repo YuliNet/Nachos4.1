@@ -264,40 +264,4 @@ Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 	ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
 	DEBUG(dbgAddr, "phys addr = " << *physAddr);
 	return NoException;
-
-
-
-/*
-	if (tlb == NULL)
-	{ // => page table => vpn is index into table
-		if (vpn >= pageTableSize)
-		{
-			DEBUG(dbgAddr, "Illegal virtual page # " << virtAddr);
-			return AddressErrorException;
-		}
-		else if (!pageTable[vpn].valid)
-		{
-			DEBUG(dbgAddr, "Invalid virtual page # " << virtAddr);
-			return PageFaultException;
-		}
-		entry = &pageTable[vpn];
-	}
-	else
-	{
-
-		for (entry = NULL, i = 0; i < TLBSize; i++)
-			if (tlb[i].valid && (tlb[i].virtualPage == ((int)vpn)))
-			{
-				entry = &tlb[i]; // FOUND!
-				break;
-			}
-		if (entry == NULL)
-		{ // not found
-			DEBUG(dbgAddr, "Invalid TLB entry for this virtual page!");
-			return PageFaultException; // really, this is a TLB fault,
-									   // the page may be in memory,
-									   // but not in the TLB
-		}
-	}
-*/
 }

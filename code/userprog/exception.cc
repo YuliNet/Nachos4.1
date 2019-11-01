@@ -103,7 +103,7 @@ void ExceptionHandler(ExceptionType which)
 		}
 		break;
 	case PageFaultException:
-		
+
 		ASSERTNOTREACHED();
 		break;
 
