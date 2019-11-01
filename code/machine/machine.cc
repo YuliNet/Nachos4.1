@@ -61,6 +61,7 @@ Machine::Machine(bool debug_)
     mainMemory = new char[MemorySize];
     for (i = 0; i < MemorySize; i++)
       	mainMemory[i] = 0;
+    memoryMap = new Bitmap(NumPhysPages);
 #ifdef USE_TLB
     tlb = new TLB();
     pageTable = NULL;
@@ -81,6 +82,7 @@ Machine::Machine(bool debug_)
 Machine::~Machine()
 {
     delete [] mainMemory;
+    delete memoryMap;
     if (tlb != NULL)
         delete tlb;
 }

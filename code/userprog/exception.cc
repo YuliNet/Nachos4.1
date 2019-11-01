@@ -103,41 +103,15 @@ void ExceptionHandler(ExceptionType which)
 		}
 		break;
 	case PageFaultException:
-		//开启TLB
-		if (!kernel->machine->tlb)
-		{
-			//int addr = kernel->machine->ReadRegister(BadVAddrReg);
-			//TLBMissHandler(addr);
-			return;
-		}
-		else 
-		{
-			return;
-		}
+		
 		ASSERTNOTREACHED();
 		break;
 
-	
 	default:
 		cerr << "Unexpected user mode exception" << (int)which << "\n";
 		break;
 	}
 	ASSERTNOTREACHED();
-}
-
-TranslationEntry * LRU()
-{
-
-}
-
-TranslationEntry * SecondChange()
-{
-
-}
-
-TranslationEntry * FIFO()
-{
-
 }
 
 void TLBMissHandler(int addr)

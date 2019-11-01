@@ -24,6 +24,7 @@
 #include "copyright.h"
 #include "utility.h"
 #include "translate.h"
+#include "bitmap.h"
 
 
 enum ExceptionType { NoException,           // Everything ok!
@@ -99,6 +100,7 @@ class Machine {
 
     char *mainMemory;		// physical memory to store user program,
 				// code and data, while executing
+	Bitmap* memoryMap;		//位图，记录内存的分配和回收
 
 // NOTE: the hardware translation of virtual addresses in the user program
 // to physical addresses (relative to the beginning of "mainMemory")
