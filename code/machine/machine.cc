@@ -51,14 +51,14 @@ static void CheckEndian()
 //		is executed.
 //----------------------------------------------------------------------
 
-Machine::Machine(bool debug_)
+Machine::Machine(bool debug)
 {
     int i;
 
     for (i = 0; i < NumTotalRegs; i++)
         registers[i] = 0;
-    mainMemory = new char[MemorySize];
-    for (i = 0; i < MemorySize; i++)
+    mainMemory = new char[PhysicalMemorySize];
+    for (i = 0; i < PhysicalMemorySize; i++)
         mainMemory[i] = 0;
     memoryMap = new Bitmap(NumPhysPages);
 #ifdef USE_TLB
@@ -68,8 +68,8 @@ Machine::Machine(bool debug_)
     tlb = NULL;
     pageTable = NULL;
 #endif
-
-    singleStep = debug_;
+    currentAddrSpace = NULL;
+    singleStep = debug;
     CheckEndian();
 }
 
@@ -82,8 +82,9 @@ Machine::~Machine()
 {
     delete[] mainMemory;
     delete memoryMap;
-    if (tlb != NULL)
+#ifdef UST_TLB
         delete tlb;
+#endif
 }
 
 //----------------------------------------------------------------------

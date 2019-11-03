@@ -231,7 +231,7 @@ Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 	//pageFault
 	else if (!pageTable[vpn].valid)
 	{
-		DEBUG(dbgAddr, "Invalid virtual page # " << virtAddr);
+		DEBUG(dbgAddr, "pageFaultException # " << virtAddr);
 		return PageFaultException;
 	}
 	entry = &pageTable[vpn];
@@ -257,11 +257,11 @@ Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 		tlb->update(virtAddr, pageFrame);
 	}
 
-	entry->use = TRUE; // set the use, dirty bits
+	//entry->use = TRUE; // set the use, dirty bits
 	if (writing)
 		entry->dirty = TRUE;
 	*physAddr = pageFrame * PageSize + offset;
-	ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
+	ASSERT((*physAddr >= 0) && ((*physAddr + size) <= PhysicalMemorySize));
 	DEBUG(dbgAddr, "phys addr = " << *physAddr);
 	return NoException;
 }

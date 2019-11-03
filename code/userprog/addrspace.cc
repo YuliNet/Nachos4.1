@@ -64,14 +64,18 @@ SwapHeader(NoffHeader *noffH)
 AddrSpace::AddrSpace()
 {
     ASSERT(kernel->machine->memoryMap->NumClear() >= NumPhysPagesPerThread);
-    pageTable = new TranslationEntry[NumPhysPagesPerThread];
+    pageTable = new TranslationEntry[NumVirtualPages];
+    for (int i = 0; i < NumVirtualPages; i++)
+    {
+        pageTable[i].valid = FALSE;
+    }
     for (int i = 0; i < NumPhysPagesPerThread; i++)
     {
         int physicalPageNum = kernel->machine->memoryMap->FindAndSet();
         ASSERT(physicalPageNum >= 0);
         pageTable[i].virtualPage = i;
         pageTable[i].physicalPage = physicalPageNum;
-        pageTable[i].valid = TRUE;
+        //pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;
@@ -80,6 +84,30 @@ AddrSpace::AddrSpace()
     }
 }
 
+AddrSpace::AddrSpace(char* filename)
+{
+    ASSERT(kernel->machine->memoryMap->NumClear() >= NumPhysPagesPerThread);
+    pageTable = new TranslationEntry[NumVirtualPages];
+    for (int i = 0; i < NumVirtualPages; i++)
+    {
+        pageTable[i].valid = FALSE;
+    }
+    for (int i = 0; i < NumPhysPagesPerThread; i++)
+    {
+        int physicalPageNum = kernel->machine->memoryMap->FindAndSet();
+        ASSERT(physicalPageNum >= 0);
+        pageTable[i].virtualPage = i;
+        pageTable[i].physicalPage = physicalPageNum;
+        pageTable[i].use = FALSE;
+        pageTable[i].dirty = FALSE;
+        pageTable[i].readOnly = FALSE;
+        // zero out the page
+        bzero(&(kernel->machine->mainMemory[physicalPageNum * PageSize]), PageSize);
+    }
+    int len = strlen(filename);
+    userProgName = new char[len];
+    bcopy(filename, userProgName, len);
+}
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
 // 	Dealloate an address space.
@@ -92,6 +120,7 @@ AddrSpace::~AddrSpace()
         kernel->machine->memoryMap->Clear(pageTable[i].physicalPage);
     }
     delete pageTable;
+    delete userProgName;
 }
 
 //----------------------------------------------------------------------
@@ -136,7 +165,7 @@ bool AddrSpace::Load(char *fileName)
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-    ASSERT(numPages <= NumPhysPagesPerThread); // check we're not trying
+    //ASSERT(numPages <= NumPhysPagesPerThread); // check we're not trying
                                                // to run anything too big --
                                                // at least until we have
                                                // virtual memory
@@ -179,22 +208,22 @@ bool AddrSpace::LoadSegment(Segment* seg, OpenFile *executable)
         int j;
         for (j = 0; j < NumPhysPagesPerThread; j++)
         {
-            if (!pageTable[j].use)
+            if (!pageTable[j].valid)
                 break;
         }
         executable->ReadAt(&(kernel->machine->mainMemory[pageTable[j].physicalPage * PageSize]),PageSize, seg->inFileAddr + i * PageSize);
-        pageTable[j].use = TRUE;
+        pageTable[j].valid = TRUE;
     }
     int i;
     for (i = 0; i < NumPhysPagesPerThread; i++)
     {
-        if (!pageTable[i].use)
+        if (!pageTable[i].valid)
             break;
     }
     int numBytes = seg->size - (numPages - 1) * PageSize;
     int position = seg->inFileAddr + (numPages - 1) * PageSize;
     executable->ReadAt(&(kernel->machine->mainMemory[pageTable[i].physicalPage * PageSize]),numBytes, position);
-    pageTable[i].use = TRUE;
+    pageTable[i].valid = TRUE;
     return TRUE;
 }
 
@@ -299,7 +328,7 @@ AddrSpace::Translate(unsigned int vaddr, unsigned int *paddr, int isReadWrite)
     unsigned int vpn = vaddr / PageSize;
     unsigned int offset = vaddr % PageSize;
 
-    if (vpn >= numPages)
+    if (vpn >= NumVirtualPages)
     {
         return AddressErrorException;
     }
@@ -328,10 +357,27 @@ AddrSpace::Translate(unsigned int vaddr, unsigned int *paddr, int isReadWrite)
 
     *paddr = pfn * PageSize + offset;
 
-    ASSERT((*paddr < MemorySize));
+    ASSERT((*paddr < PhysicalMemorySize));
 
     //cerr << " -- AddrSpace::Translate(): vaddr: " << vaddr <<
     //  ", paddr: " << *paddr << "\n";
 
     return NoException;
+}
+
+//将Vaddr所在的一页由磁盘加载到内存中
+bool AddrSpace::LoadOnePage(int VAddr)
+{
+    OpenFile *executable = kernel->fileSystem->Open(this->userProgName);
+    
+    int physPage = kernel->machine->memoryMap->FindAndSet();
+    ASSERT(physPage >= 0);
+    int virtPage = (unsigned) VAddr / PageSize;
+
+    TranslationEntry * entry = &(kernel->machine->pageTable[virtPage]);
+    entry->physicalPage = physPage;
+    entry->valid = TRUE;
+    entry->use = FALSE;
+    entry->dirty = FALSE;
+    executable->ReadAt(&(kernel->machine->mainMemory[physPage * PageSize]), PageSize, virtPage * PageSize + sizeof(NoffHeader));
 }

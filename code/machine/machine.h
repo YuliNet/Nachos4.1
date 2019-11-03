@@ -78,6 +78,7 @@ enum ExceptionType
 
 class Instruction;
 class Interrupt;
+class AddrSpace;
 
 class Machine
 {
@@ -127,6 +128,7 @@ public:
 
 	TranslationEntry *pageTable;
 	unsigned int pageTableSize;
+	AddrSpace* currentAddrSpace;
 
 	bool ReadMem(int addr, int size, int *value);
 	bool WriteMem(int addr, int size, int value);

@@ -25,6 +25,8 @@
 #include "main.h"
 #include "syscall.h"
 #include "ksyscall.h"
+
+static void PageFaultHandler();
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -103,9 +105,9 @@ void ExceptionHandler(ExceptionType which)
 		}
 		break;
 	case PageFaultException:
-
-		ASSERTNOTREACHED();
-		break;
+		PageFaultHandler();
+		return;
+		
 
 	default:
 		cerr << "Unexpected user mode exception" << (int)which << "\n";
@@ -114,9 +116,9 @@ void ExceptionHandler(ExceptionType which)
 	ASSERTNOTREACHED();
 }
 
-void TLBMissHandler(int addr)
+static void PageFaultHandler()
 {
-	//kernel->machine->tlb->update();
-	DEBUG(dbgAddr, "TLBmiss");
+	int VAddr = kernel->machine->ReadRegister(BadVAddrReg);
+	kernel->machine->currentAddrSpace->LoadOnePage(VAddr);
 	return;
 }
