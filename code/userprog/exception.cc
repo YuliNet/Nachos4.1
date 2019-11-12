@@ -119,6 +119,6 @@ void ExceptionHandler(ExceptionType which)
 static void PageFaultHandler()
 {
 	int VAddr = kernel->machine->ReadRegister(BadVAddrReg);
-	kernel->machine->currentAddrSpace->LoadOnePage(VAddr);
+	//kernel->machine->currentAddrSpace->LoadOnePage(VAddr);
 	return;
 }

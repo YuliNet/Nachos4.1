@@ -42,7 +42,7 @@
 #include "sysdep.h"
 
 #include "machine.h"
-#include "addrspace.h"
+#include "list.h"
 
 // CPU register state to be saved on context switch.  
 // The x86 needs to save only a few registers, 
@@ -60,7 +60,7 @@ const int StackSize = (8 * 1024);	// in words
 
 
 // Thread state
-enum ThreadStatus { JUST_CREATED, RUNNING, READY, BLOCKED };
+enum ThreadStatus { JUST_CREATED, RUNNING, READY, BLOCKED, ZOMMBIE };
 
 
 // The following class defines a "thread control block" -- which
@@ -82,7 +82,8 @@ class Thread {
     void *machineState[MachineStateSize];  // all registers except for stackTop
 
   public:
-    Thread(char* debugName);		// initialize a Thread 
+    Thread(char* debugName);		// initialize a Thread
+    Thread(char* threadName, int uid, int pid); 
     ~Thread(); 				// deallocate a Thread
 					// NOTE -- thread being deleted
 					// must not be running when delete 
@@ -105,11 +106,17 @@ class Thread {
     char* getName() { return (name); }
     void Print() { cout << name << " priority: " << priority << endl; }
     void SelfTest();		// test whether thread impl is working
-    void setPid(int pid) { this->pid = pid; }
-    int getPid() { return pid; }
+    int getUid() {return uid;}
+    int getPid() {return pid;}
     
-    void setPriority(int pri) { this->priority = pri; }
+    void setPriority(int priority) { this->priority = priority; }
     int getPriority() { return priority; }
+
+    Thread* getParent() {return parent;}
+    void setParent(Thread* parent) {this->parent = parent;}
+    void addChild(Thread* child);
+    void childThreadExit(Thread* child);
+    Thread* removeExitedChild(int threadId);
 
   private:
     // some of the private data for this class is listed above
@@ -119,9 +126,13 @@ class Thread {
 				// (If NULL, don't deallocate stack)
     ThreadStatus status;	// ready, running or blocked
     char* name;
-    //int uid;
+    int uid;
     int pid;
-    unsigned int priority; //数字越小代表优先级越高,默认为0
+    int priority; //数字越小代表优先级越高,默认为0
+
+    Thread* parent;
+    List<Thread*>* activeChild;
+    List<Thread*>* exitedChild;
 
     void StackAllocate(VoidFunctionPtr func, void *arg);
     				// Allocate a stack for thread.
@@ -136,8 +147,9 @@ class Thread {
   public:
     void SaveUserState();		// save user-level register state
     void RestoreUserState();		// restore user-level register state
+    void SetUserRegister(int id, int value);
 
-    AddrSpace *space;			// User code this thread is running.
+    AddrSpace* space;
 };
 
 // external function, dummy routine whose sole job is to call Thread::Print

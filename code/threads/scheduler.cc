@@ -135,13 +135,13 @@ void Scheduler::Run(Thread *nextThread, bool finishing)
         ASSERT(toBeDestroyed == NULL);
         toBeDestroyed = oldThread;
     }
-
+#ifdef USER_PROGRAM
     if (oldThread->space != NULL)
     {                               // if this thread is a user program,
         oldThread->SaveUserState(); // save the user's CPU registers
         oldThread->space->SaveState();
     }
-
+#endif
     oldThread->CheckOverflow(); // check if the old thread
                                 // had an undetected stack overflow
 
@@ -167,12 +167,13 @@ void Scheduler::Run(Thread *nextThread, bool finishing)
     CheckToBeDestroyed(); // check if thread we were running
                           // before this one has finished
                           // and needs to be cleaned up
-
+#ifdef USER_PROGRAM
     if (oldThread->space != NULL)
     {                                  // if there is an address space
         oldThread->RestoreUserState(); // to restore, do it.
         oldThread->space->RestoreState();
     }
+#endif
 }
 
 //----------------------------------------------------------------------

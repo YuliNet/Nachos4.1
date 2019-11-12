@@ -24,6 +24,7 @@
 
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
+int testnum = 2;
 
 //----------------------------------------------------------------------
 // Thread::Thread
@@ -32,28 +33,40 @@ const int STACK_FENCEPOST = 0xdedbeef;
 //
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
-
-Thread::Thread(char *threadName)
+Thread::Thread(char* threadName)
 {
-    if (kernel->numOfThread >= 128)
-    {
-        throw "The number of threads has reached the upper limit";
-    }
+    priority = 0;
     name = threadName;
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
-    for (int i = 0; i < MachineStateSize; i++)
-    {
-        machineState[i] = NULL; // not strictly necessary, since
-                                // new thread ignores contents
-                                // of machine registers
-    }
+
+    parent = kernel->currentThread;
+    activeChild = new List<Thread*>();
+    exitedChild = new List<Thread*>();
+
+#ifdef USER_PROGRAM
     space = NULL;
-    pid = kernel->numOfThread;
-    priority = 5;
-    kernel->numOfThread++;
-    kernel->threadList->Append(this);
+#endif
+}
+
+Thread::Thread(char *threadName, int uid, int pid)
+{
+    this->pid = pid;
+    this->uid = uid;
+    priority = 0;
+    name = threadName;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+
+    parent = kernel->currentThread;
+    activeChild = new List<Thread*>();
+    exitedChild = new List<Thread*>();
+
+#ifdef USER_PROGRAM
+    space = NULL;
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -75,8 +88,12 @@ Thread::~Thread()
     ASSERT(this != kernel->currentThread);
     if (stack != NULL)
         DeallocBoundedArray((char *)stack, StackSize * sizeof(int));
-    kernel->numOfThread--;
-    kernel->threadList->Remove(this);
+    delete activeChild;
+    delete exitedChild;
+
+#ifdef VM
+    memoryManager->deleteAddrSpace(pid);
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -112,6 +129,7 @@ void Thread::Fork(VoidFunctionPtr func, void *arg)
     oldLevel = interrupt->SetLevel(IntOff);
     scheduler->ReadyToRun(this); // ReadyToRun assumes that interrupts
                                  // are disabled!
+    kernel->currentThread->Yield();
     (void)interrupt->SetLevel(oldLevel);
 }
 
@@ -184,6 +202,12 @@ void Thread::Finish()
 
     DEBUG(dbgThread, "Finishing thread: " << name);
 
+    status = ZOMMBIE;
+    if (parent != NULL)
+    {
+        parent->childThreadExit(this);
+    }
+
     Sleep(TRUE); // invokes SWITCH
     // not reached
 }
@@ -209,18 +233,25 @@ void Thread::Finish()
 void Thread::Yield()
 {
     Thread *nextThread;
+    Thread *currentThread = kernel->currentThread;
     IntStatus oldLevel = kernel->interrupt->SetLevel(IntOff);
 
-    ASSERT(this == kernel->currentThread);
+    ASSERT(this == currentThread);
 
     DEBUG(dbgThread, "Yielding thread: " << name);
 
     nextThread = kernel->scheduler->FindNextToRun();
     if (nextThread != NULL)
     {
-        kernel->scheduler->RemoveFront();
-        kernel->scheduler->ReadyToRun(this);
-        kernel->scheduler->Run(nextThread, FALSE);
+        if (nextThread->getPriority() <= currentThread->getPriority())
+        {
+            kernel->scheduler->ReadyToRun(this);
+            kernel->scheduler->Run(nextThread, false);
+        }
+        else
+        {
+            kernel->scheduler->ReadyToRun(nextThread);
+        }
     }
     (void)kernel->interrupt->SetLevel(oldLevel);
 }
@@ -254,12 +285,14 @@ void Thread::Sleep(bool finishing)
 
     DEBUG(dbgThread, "Sleeping thread: " << name);
 
-    status = BLOCKED;
+    if(finishing == false)  //else currentThread->status was set ZOMMBIE in Finish()
+    {
+        status = BLOCKED;
+    }
     while ((nextThread = kernel->scheduler->FindNextToRun()) == NULL)
         kernel->interrupt->Idle(); // no one to run, wait for an interrupt
 
     // returns when it's time for us to run
-    kernel->scheduler->RemoveFront();
     kernel->scheduler->Run(nextThread, finishing);
 }
 
@@ -371,6 +404,7 @@ void Thread::StackAllocate(VoidFunctionPtr func, void *arg)
 #endif
 }
 
+#ifdef USER_PROGRAM
 #include "machine.h"
 
 //----------------------------------------------------------------------
@@ -402,6 +436,34 @@ void Thread::RestoreUserState()
     for (int i = 0; i < NumTotalRegs; i++)
         kernel->machine->WriteRegister(i, userRegisters[i]);
 }
+#endif
+
+void
+Thread::addChild(Thread* child)
+{
+    if (child != NULL)
+    {
+        activeChild->Append(child);
+    }
+}
+
+void
+Thread::childThreadExit(Thread* child)
+{
+    if (child != NULL)
+    {
+        activeChild->Remove(child);
+        exitedChild->Append(child);
+    }
+}
+
+Thread*
+Thread::removeExitedChild(int threadId)
+{
+    Thread* child = kernel->threadManager->getThreadPtr(threadId);
+    exitedChild->Remove(child);
+    return child;
+}
 
 //----------------------------------------------------------------------
 // SimpleThread
@@ -413,30 +475,15 @@ void Thread::RestoreUserState()
 //----------------------------------------------------------------------
 
 static void
-codeOfB(int which)
-{
-    for (int i = 0; i < 20; i++)
-    {
-        kernel->interrupt->OneTick();
-        cout << which << endl;
-    }
-}
-
-static void
 SimpleThread(int which)
 {
-    Thread *b = new Thread("priority_3");
-    b->setPriority(3);
-    b->Fork((VoidFunctionPtr)codeOfB, (void *)3);
-    for (int i = 0; i < 20; i++)
+    int num;
+    
+    for (num = 0; num < 5; num++) 
     {
-        kernel->interrupt->OneTick();
-        cout << which << endl;
+	    printf("*** thread %d looped %d times\n", which, num);
+        kernel->currentThread->Yield();
     }
-    // for (num = 0; num < 5; num++) {
-    // cout << "*** thread " << which << " looped " << num << " times\n";
-    //     kernel->currentThread->Yield();
-    // }
 }
 
 //----------------------------------------------------------------------
@@ -444,28 +491,79 @@ SimpleThread(int which)
 // 	Set up a ping-pong between two threads, by forking a thread
 //	to call SimpleThread, and then calling SimpleThread ourselves.
 //----------------------------------------------------------------------
+void
+ThreadExercise1Test()
+{
+    DEBUG(dbgThread, "Entering Thread Exercise Test 1");
+    ThreadManager* threadManager = kernel->threadManager;
+	Thread* t1 = threadManager->createThread("thread 1", 10);
+	Thread* t2 = threadManager->createThread("thread 2", 20);
+	Thread* t3 = threadManager->createThread("thread 3", 30);
+
+	t1->Fork(SimpleThread, t1->getPid());
+	t2->Fork(SimpleThread, t2->getPid());
+	t3->Fork(SimpleThread, t3->getPid());
+}
+
+void
+JustYield(int which)
+{
+	printf("Current running thread is %s\n", kernel->currentThread->getName());
+	kernel->threadManager->listThreadStatus();
+	kernel->currentThread->Yield();
+	kernel->threadManager->listThreadStatus();
+}
+
+void 
+ThreadExercise2Test()
+{
+    DEBUG(dbgThread, "Entering Thread Exercise Test 2");
+    ThreadManager* threadManager = kernel->threadManager;
+
+	kernel->currentThread->setPriority(4);
+
+	printf("Create 3 threads:\n");
+
+	Thread* t1 = threadManager->createThread("thread 1", 10);
+	Thread* t2 = threadManager->createThread("thread 2", 20);
+	Thread* t3 = threadManager->createThread("thread 3", 30);
+
+	t1->setPriority(8);
+	t2->setPriority(0);
+	t3->setPriority(5);
+
+	threadManager->listThreadStatus();
+
+	printf("After fork 3 threads:\n");
+
+	t1->Fork(JustYield, t1->getPid());
+	t2->Fork(JustYield, t1->getPid());
+	//t3->Fork(JustYield, t3->getThreadID());
+
+	threadManager->listThreadStatus();
+
+	JustYield(kernel->currentThread->getPid());
+}
+
 
 void Thread::SelfTest()
 {
-    DEBUG(dbgThread, "Entering Thread::SelfTest");
-
-    // for (int i = 0; i < 5; i++)
-    // {
-    //     Thread* t = new Thread("forked thread");
-    //     t->setPriority(i);
-    //     t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
-    // }
-    // kernel->scheduler->Print();
-    // kernel->currentThread->Yield();
-    // SimpleThread(0);
-    // kernel->scheduler->Print();
-
-    Thread *a = new Thread("priority_4");
-    a->setPriority(4);
-    a->Fork((VoidFunctionPtr)SimpleThread, (void *)4);
-    kernel->currentThread->Yield();
-    // Thread* b = new Thread("priority_2");
-    // b->setPriority(2);
-    // b->Fork((VoidFunctionPtr) SimpleThread, (void *) 2);
-    // kernel->currentThread->Yield();
+    switch (testnum)
+    {
+    // Exercise 1:Thread ID and user ID
+    case 1:
+        ThreadExercise1Test();
+        break;
+    // Exercise 2:Thread-Status command and priority scheduling
+    case 2:
+        ThreadExercise2Test();
+        break;
+    // Exercise 3:Producer-Customer problem with semaphore and condition value
+    case 3:
+        //ThreadExercise3Test();
+        break;
+    default:
+        printf("No test specified.\n");
+        break;
+    }
 }

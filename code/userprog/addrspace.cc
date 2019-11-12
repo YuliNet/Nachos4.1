@@ -108,6 +108,11 @@ AddrSpace::AddrSpace(char* filename)
     userProgName = new char[len];
     bcopy(filename, userProgName, len);
 }
+
+AddrSpace::AddrSpace(int threadId, OpenFile* executable)
+{
+    
+}
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
 // 	Dealloate an address space.

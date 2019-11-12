@@ -30,7 +30,7 @@ Kernel::Kernel(int argc, char **argv)
     debugUserProg = FALSE;
     consoleIn = NULL;          // default is stdin
     consoleOut = NULL;         // default is stdout
-    threadList = NULL;
+    threadManager = NULL;
 #ifndef FILESYS_STUB
     formatFlag = FALSE;
 #endif
@@ -91,8 +91,7 @@ Kernel::Initialize()
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread
     // object to save its state. 
-    numOfThread = 0;
-    threadList = new List<Thread *>;    //必须在new Thread("main")之前建立threadList
+    threadManager = new ThreadManager();
     currentThread = new Thread("main");		
     currentThread->setStatus(RUNNING);
 
@@ -134,7 +133,7 @@ Kernel::~Kernel()
     delete postOfficeIn;
     delete postOfficeOut;
     
-    delete threadList;
+    delete threadManager;
     Exit(0);
 }
 
@@ -246,15 +245,5 @@ Kernel::NetworkTest() {
     }
 
     // Then we're done!
-}
-
-void
-Kernel::TS()
-{
-    ListIterator<Thread*> *iter = new ListIterator<Thread*>(kernel->threadList);
-    for(; !iter->IsDone(); iter->Next())
-    {
-        cout << "name : " << iter->Item()->getName()<< " pid : " << iter->Item()->getPid()<< " status : " << iter->Item()->getStatus() << endl;
-    }
 }
 

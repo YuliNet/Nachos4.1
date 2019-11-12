@@ -1,5 +1,7 @@
 {
     "files.associations": {
         "exception": "cpp"
-    }
+    },
+    "fileheader.Author": "gaofanfei",
+    "fileheader.LastModifiedBy": "gaofanfei"
 }

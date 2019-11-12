@@ -2,13 +2,13 @@
  * @Author: Lollipop
  * @Date: 2019-11-11 22:12:35
  * @LastEditors: Lollipop
- * @LastEditTime: 2019-11-11 22:35:08
+ * @LastEditTime: 2019-11-12 11:29:52
  * @Description: 
  */
-#include "PhyMemManger.h"
+#include "PhyMemManager.h"
 #include "SwappingLRU.h"
 
-PhyMemManger::PhyMemManger(int pageNums)
+PhyMemManager::PhyMemManager(int pageNums)
 {
     phyPageNums = pageNums;
     phyMemoryMap = new Bitmap(pageNums);
@@ -16,7 +16,7 @@ PhyMemManger::PhyMemManger(int pageNums)
     swappingStrategy = new SwappingLRU(pageNums);
 }
 
-PhyMemManger::~PhyMemManger()
+PhyMemManager::~PhyMemManager()
 {
     delete phyMemoryMap;
     delete [] phyMemPageTable;
@@ -24,7 +24,7 @@ PhyMemManger::~PhyMemManger()
 }
 
 int
-PhyMemManger::findOneEmptyPage()
+PhyMemManager::findOneEmptyPage()
 {
     int page;
 
@@ -40,25 +40,25 @@ PhyMemManger::findOneEmptyPage()
  * @return: 被替换项的index
  */
 int
-PhyMemManger::swapOnePage()
+PhyMemManager::swapOnePage()
 {
     return swappingStrategy->findOneElementToSwap();
 }
 
 void
-PhyMemManger::clearOnePage(int phyPage)
+PhyMemManager::clearOnePage(int phyPage)
 {
     phyMemoryMap->Clear(phyPage);
 }
 
 bool
-PhyMemManger::isPageValid(int phyPage)
+PhyMemManager::isPageValid(int phyPage)
 {
     return phyMemoryMap->Test(phyPage);
 }
 
 int 
-PhyMemManger::getMainThread(int phyPage)
+PhyMemManager::getMainThread(int phyPage)
 {
     if (phyMemoryMap->Test(phyPage))
     {
@@ -71,7 +71,7 @@ PhyMemManger::getMainThread(int phyPage)
 }
 
 void
-PhyMemManger::setMainThreadId(int phyPage, int threadId)
+PhyMemManager::setMainThreadId(int phyPage, int threadId)
 {
     if (phyMemoryMap->Test(phyPage))
     {
@@ -80,7 +80,7 @@ PhyMemManger::setMainThreadId(int phyPage, int threadId)
 }
 
 int
-PhyMemManger::getVirtualPage(int phyPage)
+PhyMemManager::getVirtualPage(int phyPage)
 {
     if (phyMemoryMap->Test(phyPage))
     {
@@ -95,7 +95,7 @@ PhyMemManger::getVirtualPage(int phyPage)
 }
 
 void
-PhyMemManger::setVirtualPage(int phyPage, int virtualPage)
+PhyMemManager::setVirtualPage(int phyPage, int virtualPage)
 {
     if (phyMemoryMap->Test(phyPage))
     {
@@ -104,7 +104,7 @@ PhyMemManger::setVirtualPage(int phyPage, int virtualPage)
 }
 
 void
-PhyMemManger::updatePageWeight(int phyPage)
+PhyMemManager::updatePageWeight(int phyPage)
 {
     if (phyMemoryMap->Test(phyPage))
     {

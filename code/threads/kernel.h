@@ -1,3 +1,10 @@
+/*
+ * @Author: Lollipop
+ * @Date: 2019-11-12 17:05:49
+ * @LastEditors: Lollipop
+ * @LastEditTime: 2019-11-12 22:35:57
+ * @Description: 
+ */
 // kernel.h
 //	Global variables for the Nachos kernel.
 //
@@ -18,6 +25,7 @@
 #include "alarm.h"
 #include "filesys.h"
 #include "machine.h"
+#include "ThreadManager.h"
 
 class PostOfficeInput;
 class PostOfficeOutput;
@@ -41,11 +49,11 @@ class Kernel {
 
     void NetworkTest();         // interactive 2-machine network test
     
-    void TS();   //Thread Status，显示当前系统中所有线程的信息和状态
 // These are public for notational convenience; really, 
 // they're global variables used everywhere.
 
     Thread *currentThread;	// the thread holding the CPU
+    ThreadManager *threadManager;
     Scheduler *scheduler;	// the ready list
     Interrupt *interrupt;	// interrupt status
     Statistics *stats;		// performance metrics
@@ -59,10 +67,6 @@ class Kernel {
     PostOfficeOutput *postOfficeOut;
 
     int hostName;               // machine identifier
-
-    int numOfThread;  //当前系统中所有线程的数量
-
-    List<Thread *> *threadList;
 
   private:
     bool randomSlice;		// enable pseudo-random time slicing

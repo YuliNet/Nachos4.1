@@ -1,3 +1,10 @@
+/*
+ * @Author: Lollipop
+ * @Date: 2019-11-03 21:19:35
+ * @LastEditors: Lollipop
+ * @LastEditTime: 2019-11-12 11:11:32
+ * @Description: 
+ */
 // addrspace.h 
 //	Data structures to keep track of executing user programs 
 //	(address spaces).
@@ -17,12 +24,15 @@
 #include "filesys.h"
 #include "noff.h"
 
-#define UserStackSize		1024 	// increase this as necessary!
+#define UserThreadMax 10
+#define UserThreadStackSize 1024
+#define UserStackSize		(UserThreadMax * UserThreadStackSize) 	// increase this as necessary!
 
 class AddrSpace {
   public:
     AddrSpace();			// Create an address space.
     AddrSpace(char* filename);
+    AddrSpace(int threadId, OpenFile* executable);
     ~AddrSpace();			// De-allocate an address space
 
     bool Load(char *fileName);		// Load a program into addr space from
@@ -36,7 +46,10 @@ class AddrSpace {
                                         // been loaded
 
     void SaveState();			// Save/restore address space-specific
-    void RestoreState();		// info on a context switch 
+    void RestoreState();		// info on a context switch
+
+    TranslationEntry* getPageTable() {return pageTable;}
+    int getNumPages() {return numPages;}
 
     // Translate virtual address _vaddr_
     // to physical address _paddr_. _mode_
@@ -45,11 +58,12 @@ class AddrSpace {
     char * userProgName; 
 
   private:
-    TranslationEntry *pageTable;	// Assume linear page table translation
-					// for now!
-    unsigned int numPages = NumVirtualPages;		// Number of pages in the virtual 
-					// address space
+    TranslationEntry *pageTable;
 
+    int threadId;
+    unsigned int numPages;		// Number of pages in the virtual address space
+    int stackSpace[UserThreadMax];
+    OpenFile* exeFileId;
     
     void InitRegisters();		// Initialize user-level CPU registers,
 					// before jumping to user code

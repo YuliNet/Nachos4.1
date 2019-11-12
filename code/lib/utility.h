@@ -1,3 +1,10 @@
+/*
+ * @Author: Lollipop
+ * @Date: 2019-11-13 00:25:40
+ * @LastEditors: Lollipop
+ * @LastEditTime: 2019-11-13 00:25:41
+ * @Description: 
+ */
 // utility.h 
 //	Miscellaneous useful definitions.
 //
@@ -34,5 +41,6 @@
 
 typedef void (*VoidFunctionPtr)(void *arg); 
 typedef void (*VoidNoArgFunctionPtr)(); 
+typedef int  (*CompFunctionPtr)(void *target, void *data);
 
 #endif // UTILITY_H

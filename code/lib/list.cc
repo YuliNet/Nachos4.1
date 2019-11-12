@@ -381,3 +381,32 @@ SortedList<T>::SelfTest(T *p, int numEntries)
 
      delete q;
 }
+
+template <class T>
+void*
+List<T>::findByComp(CompFunctionPtr comp, void* data)
+{
+    ListElement<T>* target = NULL;
+    ListElement<T>* cursor = NULL;
+    void* thing = NULL;
+
+    if (IsEmpty())
+    {
+        return NULL;
+    }
+
+    for (ListElement<T>* ptr = first; ptr!= NULL; ptr = ptr->next)
+    {
+        if (comp(ptr->item, data))
+        {
+            target = ptr;
+            break;
+        }
+    }
+
+    if (target != NULL)
+    {
+        return target->item;
+    }
+    return NULL;
+}
