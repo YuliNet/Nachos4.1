@@ -317,17 +317,19 @@ int main(int argc, char **argv)
         Print(printFileName);
     }
 #endif // FILESYS_STUB
-
+#ifdef USER_PROGRAM
     // finally, run an initial user program if requested to do so
-    // if (userProgName != NULL)
-    // {
-    //     AddrSpace *space = new AddrSpace(userProgName);
-    //     ASSERT(space != (AddrSpace *)NULL);
-    //     kernel->machine->currentAddrSpace = space;
-    //     space->Execute();   // run the program
-    //     ASSERTNOTREACHED(); // Execute never returns
-    // }
-
+    if (userProgName != NULL)
+    {
+        OpenFile* executable = fileSystem->Open(userProgName);
+        
+        AddrSpace *space = new AddrSpace(userProgName);
+        ASSERT(space != (AddrSpace *)NULL);
+        kernel->machine->currentAddrSpace = space;
+        space->Execute();   // run the program
+        ASSERTNOTREACHED(); // Execute never returns
+    }
+#endif
     // If we don't run a user program, we may get here.
     // Calling "return" would terminate the program.
     // Instead, call Halt, which will first clean up, then

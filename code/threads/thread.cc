@@ -24,7 +24,7 @@
 
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
-int testnum = 2;
+int testnum = 1;
 
 //----------------------------------------------------------------------
 // Thread::Thread
@@ -243,15 +243,8 @@ void Thread::Yield()
     nextThread = kernel->scheduler->FindNextToRun();
     if (nextThread != NULL)
     {
-        if (nextThread->getPriority() <= currentThread->getPriority())
-        {
             kernel->scheduler->ReadyToRun(this);
             kernel->scheduler->Run(nextThread, false);
-        }
-        else
-        {
-            kernel->scheduler->ReadyToRun(nextThread);
-        }
     }
     (void)kernel->interrupt->SetLevel(oldLevel);
 }

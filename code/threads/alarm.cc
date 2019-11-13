@@ -1,3 +1,10 @@
+/*
+ * @Author: Lollipop
+ * @Date: 2019-11-13 20:22:20
+ * @LastEditors: Lollipop
+ * @LastEditTime: 2019-11-13 20:22:20
+ * @Description: 
+ */
 // alarm.cc
 //	Routines to use a hardware timer device to provide a
 //	software alarm clock.  For now, we just provide time-slicing.
@@ -47,19 +54,19 @@ Alarm::Alarm(bool doRandom)
 void 
 Alarm::CallBack() 
 {
-    Interrupt *interrupt = kernel->interrupt;
-    Scheduler *scheduler = kernel->scheduler;
-    Thread *current = kernel->currentThread;
-    Thread *front = scheduler->FindNextToRun();
-    MachineStatus status = interrupt->getStatus();
+    // Interrupt *interrupt = kernel->interrupt;
+    // Scheduler *scheduler = kernel->scheduler;
+    // Thread *current = kernel->currentThread;
+    // Thread *front = scheduler->FindNextToRun();
+    // MachineStatus status = interrupt->getStatus();
     
-    if (status != IdleMode) {
-        DEBUG(dbgThread,"*****CallBack*****");
-        interrupt->DumpState();
-        if (front->getPriority() < current->getPriority())
-        {
-            interrupt->YieldOnReturn();
-        }
+    // if (status != IdleMode) {
+    //     DEBUG(dbgThread,"*****CallBack*****");
+    //     interrupt->DumpState();
+    //     if (front->getPriority() < current->getPriority())
+    //     {
+    //         interrupt->YieldOnReturn();
+    //     }
         
-    }
+    // }
 }

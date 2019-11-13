@@ -1,3 +1,10 @@
+/*
+ * @Author: Lollipop
+ * @Date: 2019-11-13 20:29:35
+ * @LastEditors: Lollipop
+ * @LastEditTime: 2019-11-13 20:31:00
+ * @Description: 
+ */
 // scheduler.h 
 //	Data structures for the thread dispatcher and scheduler.
 //	Primarily, the list of threads that are ready to run.
@@ -25,8 +32,7 @@ class Scheduler {
     void ReadyToRun(Thread* thread);	
     				// Thread can be dispatched.
     Thread* FindNextToRun();	// return first thread on the ready 
-				// list, if any, NOT DEQUEUE!!!
-    void RemoveFront(); //dequeue readyList, use with FindNextToRun
+				// list, if any
     void Run(Thread* nextThread, bool finishing);
     				// Cause nextThread to start running
     void CheckToBeDestroyed();// Check if thread that had been

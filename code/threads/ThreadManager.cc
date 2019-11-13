@@ -2,10 +2,11 @@
  * @Author: Lollipop
  * @Date: 2019-11-12 15:32:49
  * @LastEditors: Lollipop
- * @LastEditTime: 2019-11-13 00:38:17
+ * @LastEditTime: 2019-11-13 21:14:40
  * @Description: 
  */
 #include "ThreadManager.h"
+#include "main.h"
 
 bool threadIDComp(void *target, void *data)
 {
@@ -35,14 +36,36 @@ ThreadManager::ThreadManager()
 ThreadManager::~ThreadManager()
 {
     delete threadMap;
-    delete[] threadList;
+    delete threadList;
 }
 
 Thread*
 ThreadManager::createThread(char* threadName, int uid)
 {
-    return createThread(threadName, 0);
+    Thread* newThread = NULL;
 
+    if (threadCnt + 1 < THREAD_COUNT_MAX)
+    {
+        threadCnt++;
+
+        int pid = generateThreadID();
+        newThread = new Thread(threadName, uid, pid);
+
+        if (threadCnt > 1)
+        {
+            kernel->currentThread->addChild(newThread);
+        }
+
+        threadList->Append(newThread);
+    }
+
+    return newThread; 
+}
+
+Thread*
+ThreadManager::createThread(char* threadName)
+{
+    return createThread(threadName, 0);
 }
 
 void

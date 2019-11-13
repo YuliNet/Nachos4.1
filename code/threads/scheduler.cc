@@ -92,19 +92,7 @@ Scheduler::FindNextToRun()
 {
     ASSERT(kernel->interrupt->getLevel() == IntOff);
 
-    if (readyList->IsEmpty())
-    {
-        return NULL;
-    }
-    else
-    {
-        return readyList->Front();
-    }
-}
-
-void Scheduler::RemoveFront()
-{
-    readyList->RemoveFront();
+    return readyList->RemoveFront();
 }
 
 //----------------------------------------------------------------------
@@ -188,7 +176,7 @@ void Scheduler::CheckToBeDestroyed()
 {
     if (toBeDestroyed != NULL)
     {
-        delete toBeDestroyed;
+        kernel->threadManager->deleteThread(toBeDestroyed);
         toBeDestroyed = NULL;
     }
 }
