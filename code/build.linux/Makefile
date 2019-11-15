@@ -191,7 +191,7 @@
 # of "-DSIM_FIX" to the DEFINES.  This should be enabled by default
 # and eventually will not require the symbol definition
 ################################################################
-DEFINES =  -DFILESYS_STUB -DRDATA -DSIM_FIX -DTUT -DUSE_TLB
+DEFINES =  -DFILESYS_STUB -DRDATA -DSIM_FIX -DTUT -DUSE_TLB -DUSER_PROGRAM -DUSE_TLB
 
 
 #####################################################################
@@ -210,7 +210,7 @@ LD = g++ -m32
 AS = as --32
 RM = /bin/rm
 
-INCPATH = -I../network -I../filesys -I../userprog -I../threads -I../machine -I../lib
+INCPATH = -I../network -I../filesys -I../userprog -I../threads -I../machine -I../lib -I../vm
 
 PROGRAM = nachos
 
@@ -250,7 +250,8 @@ MACHINE_H = ../machine/callback.h\
 	../machine/translate.h\
 	../machine/network.h\
 	../machine/disk.h\
-	../machine/memory.h
+	../machine/memory.h\
+	../machine/TLBManager.h\
 
 MACHINE_C = ../machine/interrupt.cc\
 	../machine/stats.cc\
@@ -261,10 +262,10 @@ MACHINE_C = ../machine/interrupt.cc\
 	../machine/translate.cc\
 	../machine/network.cc\
 	../machine/disk.cc\
-	../machine/TLB.cc
+	../machine/TLBManager.cc\
 
 MACHINE_O = interrupt.o stats.o timer.o console.o machine.o mipssim.o\
-	translate.o network.o disk.o TLB.o
+	translate.o network.o disk.o TLBManager.o
 
 THREAD_H = ../threads/alarm.h\
 	../threads/kernel.h\
@@ -320,6 +321,19 @@ NETWORK_C = ../network/post.cc
 
 NETWORK_O = post.o
 
+VM_H =../vm/MemoryManager.h \
+	../vm/PhyMemManager.h \
+	../vm/VirtMemManager.h \
+	../vm/SwappingLRU.h \
+	../vm/SwappingStrategy.h \
+
+VM_C =../vm/MemoryManager.cc \
+	../vm/PhyMemManager.cc \
+	../vm/SwappingLRU.cc \
+	../vm/VirtMemManager.cc \
+
+VM_O = MemoryManager.o PhyMemManager.o SwappingLRU.o VirtMemManager.o
+
 ##################################################################
 #  You probably don't want to change anything below this point in
 #  the file unless you are comfortable with GNU make and know what
@@ -328,10 +342,10 @@ NETWORK_O = post.o
 
 THREAD_S = ../threads/switch.s
 
-HFILES = $(LIB_H) $(MACHINE_H) $(THREAD_H) $(USERPROG_H) $(FILESYS_H) $(NETWORK_H)
-CFILES = $(LIB_C) $(MACHINE_C) $(THREAD_C) $(USERPROG_C) $(FILESYS_C) $(NETWORK_C)
+HFILES = $(LIB_H) $(MACHINE_H) $(THREAD_H) $(USERPROG_H) $(FILESYS_H) $(NETWORK_H) $(VM_H)
+CFILES = $(LIB_C) $(MACHINE_C) $(THREAD_C) $(USERPROG_C) $(FILESYS_C) $(NETWORK_C) $(VM_C)
 
-C_OFILES = $(LIB_O) $(MACHINE_O) $(THREAD_O) $(USERPROG_O) $(FILESYS_O) $(NETWORK_O)
+C_OFILES = $(LIB_O) $(MACHINE_O) $(THREAD_O) $(USERPROG_O) $(FILESYS_O) $(NETWORK_O) $(VM_O)
 
 S_OFILES = switch.o
 OFILES = $(C_OFILES) $(S_OFILES)

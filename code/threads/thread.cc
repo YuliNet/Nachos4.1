@@ -24,7 +24,7 @@
 
 // this is put at the top of the execution stack, for detecting stack overflows
 const int STACK_FENCEPOST = 0xdedbeef;
-int testnum = 1;
+int testnum = 2;
 
 //----------------------------------------------------------------------
 // Thread::Thread

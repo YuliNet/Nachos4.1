@@ -1,3 +1,10 @@
+/*
+ * @Author: Lollipop
+ * @Date: 2019-11-15 14:19:41
+ * @LastEditors: Lollipop
+ * @LastEditTime: 2019-11-15 14:19:41
+ * @Description: 
+ */
 // translate.h
 //	Data structures for managing the translation from
 //	virtual page # -> physical page #, used for managing
@@ -41,31 +48,5 @@ public:
                     // page is referenced or modified.
   bool dirty;       // This bit is set by the hardware every time the
                     // page is modified.
-};
-
-class TLBEntry
-{
-public:
-  unsigned int Tag;
-  int PPN;
-  bool valid;
-
-  unsigned int lru;
-
-  TLBEntry()
-  {
-    valid = FALSE;
-  }
-};
-
-class TLB
-{
-public:
-  TLBEntry* tlbPtr[4];
-
-  TLB();
-  ~TLB();
-  int translate(int virtAddr);
-  void update(int virtAddr, int pageFrame);
 };
 #endif

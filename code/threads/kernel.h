@@ -2,7 +2,7 @@
  * @Author: Lollipop
  * @Date: 2019-11-12 17:05:49
  * @LastEditors: Lollipop
- * @LastEditTime: 2019-11-12 22:35:57
+ * @LastEditTime: 2019-11-15 11:38:57
  * @Description: 
  */
 // kernel.h
@@ -26,6 +26,7 @@
 #include "filesys.h"
 #include "machine.h"
 #include "ThreadManager.h"
+#include "MemoryManager.h"
 
 class PostOfficeInput;
 class PostOfficeOutput;
@@ -65,6 +66,7 @@ class Kernel {
     FileSystem *fileSystem;     
     PostOfficeInput *postOfficeIn;
     PostOfficeOutput *postOfficeOut;
+    MemoryManager* memoryManager;
 
     int hostName;               // machine identifier
 

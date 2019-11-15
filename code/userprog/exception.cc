@@ -118,7 +118,10 @@ void ExceptionHandler(ExceptionType which)
 
 static void PageFaultHandler()
 {
-	int VAddr = kernel->machine->ReadRegister(BadVAddrReg);
-	//kernel->machine->currentAddrSpace->LoadOnePage(VAddr);
-	return;
+	int addr = kernel->machine->ReadRegister(BadVAddrReg);
+	int vpn = (unsigned) addr / PageSize;
+	
+	kernel->memoryManager->pageFaultHandler(vpn);
+	
+	kernel->stats->numPageFaults++;
 }

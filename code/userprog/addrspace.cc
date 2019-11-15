@@ -61,84 +61,7 @@ SwapHeader(NoffHeader *noffH)
 //	only uniprogramming, and we have a single unsegmented page table
 //----------------------------------------------------------------------
 
-AddrSpace::AddrSpace()
-{
-    ASSERT(kernel->machine->memoryMap->NumClear() >= NumPhysPagesPerThread);
-    pageTable = new TranslationEntry[NumVirtualPages];
-    for (int i = 0; i < NumVirtualPages; i++)
-    {
-        pageTable[i].valid = FALSE;
-    }
-    for (int i = 0; i < NumPhysPagesPerThread; i++)
-    {
-        int physicalPageNum = kernel->machine->memoryMap->FindAndSet();
-        ASSERT(physicalPageNum >= 0);
-        pageTable[i].virtualPage = i;
-        pageTable[i].physicalPage = physicalPageNum;
-        //pageTable[i].valid = TRUE;
-        pageTable[i].use = FALSE;
-        pageTable[i].dirty = FALSE;
-        pageTable[i].readOnly = FALSE;
-        // zero out the page
-        bzero(&(kernel->machine->mainMemory[physicalPageNum * PageSize]), PageSize);
-    }
-}
-
-AddrSpace::AddrSpace(char* filename)
-{
-    ASSERT(kernel->machine->memoryMap->NumClear() >= NumPhysPagesPerThread);
-    pageTable = new TranslationEntry[NumVirtualPages];
-    for (int i = 0; i < NumVirtualPages; i++)
-    {
-        pageTable[i].valid = FALSE;
-    }
-    for (int i = 0; i < NumPhysPagesPerThread; i++)
-    {
-        int physicalPageNum = kernel->machine->memoryMap->FindAndSet();
-        ASSERT(physicalPageNum >= 0);
-        pageTable[i].virtualPage = i;
-        pageTable[i].physicalPage = physicalPageNum;
-        pageTable[i].use = FALSE;
-        pageTable[i].dirty = FALSE;
-        pageTable[i].readOnly = FALSE;
-        // zero out the page
-        bzero(&(kernel->machine->mainMemory[physicalPageNum * PageSize]), PageSize);
-    }
-    int len = strlen(filename);
-    userProgName = new char[len];
-    bcopy(filename, userProgName, len);
-}
-
-AddrSpace::AddrSpace(int threadId, OpenFile* executable)
-{
-    
-}
-//----------------------------------------------------------------------
-// AddrSpace::~AddrSpace
-// 	Dealloate an address space.
-//----------------------------------------------------------------------
-
-AddrSpace::~AddrSpace()
-{
-    for (int i = 0; i < NumPhysPagesPerThread; i++)
-    {
-        kernel->machine->memoryMap->Clear(pageTable[i].physicalPage);
-    }
-    delete pageTable;
-    delete userProgName;
-}
-
-//----------------------------------------------------------------------
-// AddrSpace::Load
-// 	Load a user program into memory from a file.
-//
-//	Assumes that the page table has been initialized, and that
-//	the object code file is in NOFF format.
-//
-//	"fileName" is the file containing the object code to load into memory
-//----------------------------------------------------------------------
-
-bool AddrSpace::Load(char *fileName)
+AddrSpace::AddrSpace(int threadId, char *fileName)
 {
     OpenFile *executable = kernel->fileSystem->Open(fileName);
     NoffHeader noffH;
@@ -147,7 +70,7 @@ bool AddrSpace::Load(char *fileName)
     if (executable == NULL)
     {
         cerr << "Unable to open file " << fileName << "\n";
-        return FALSE;
+        return;
     }
 
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
@@ -170,66 +93,33 @@ bool AddrSpace::Load(char *fileName)
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-    //ASSERT(numPages <= NumPhysPagesPerThread); // check we're not trying
-                                               // to run anything too big --
-                                               // at least until we have
-                                               // virtual memory
-
     DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
 
-    // then, copy in the code and data segments into memory
-    // Note: this code assumes that virtual address = physical address
-    if (noffH.code.size > 0)
-    {
-        DEBUG(dbgAddr, "Initializing code segment.");
-        DEBUG(dbgAddr, noffH.code.virtualAddr << ", " << noffH.code.size);
-        LoadSegment(&noffH.code, executable);
-    }
-    if (noffH.initData.size > 0)
-    {
-        DEBUG(dbgAddr, "Initializing data segment.");
-        DEBUG(dbgAddr, noffH.initData.virtualAddr << ", " << noffH.initData.size);
-        LoadSegment(&noffH.initData, executable);
-    }
+    this->threadId = threadId;
+    exeFileId = executable;
+    pageTable = new TranslationEntry[numPages];
 
-#ifdef RDATA
-    if (noffH.readonlyData.size > 0)
+    // Initialize thread's page table.
+    for (int i = 0; i < numPages; i++)
     {
-        DEBUG(dbgAddr, "Initializing read only data segment.");
-        DEBUG(dbgAddr, noffH.readonlyData.virtualAddr << ", " << noffH.readonlyData.size);
-        LoadSegment(&noffH.readonlyData, executable);
+        pageTable[i].virtualPage = i;
+        pageTable[i].physicalPage = -1;
+        pageTable[i].valid = FALSE;
+        pageTable[i].readOnly = FALSE;
+        pageTable[i].use = FALSE;
+        pageTable[i].dirty = FALSE;
     }
-#endif
-
-    delete executable; // close file
-    return TRUE;       // success
 }
+//----------------------------------------------------------------------
+// AddrSpace::~AddrSpace
+// 	Dealloate an address space.
+// 该地址空间所用物理页面的清零在VirtMemManager::deleteAddrSpace()中完成
+//----------------------------------------------------------------------
 
-bool AddrSpace::LoadSegment(Segment* seg, OpenFile *executable)
+AddrSpace::~AddrSpace()
 {
-    int numPages = divRoundUp(seg->size, PageSize);
-    for (int i = 0; i < numPages - 1; i++)
-    {
-        int j;
-        for (j = 0; j < NumPhysPagesPerThread; j++)
-        {
-            if (!pageTable[j].valid)
-                break;
-        }
-        executable->ReadAt(&(kernel->machine->mainMemory[pageTable[j].physicalPage * PageSize]),PageSize, seg->inFileAddr + i * PageSize);
-        pageTable[j].valid = TRUE;
-    }
-    int i;
-    for (i = 0; i < NumPhysPagesPerThread; i++)
-    {
-        if (!pageTable[i].valid)
-            break;
-    }
-    int numBytes = seg->size - (numPages - 1) * PageSize;
-    int position = seg->inFileAddr + (numPages - 1) * PageSize;
-    executable->ReadAt(&(kernel->machine->mainMemory[pageTable[i].physicalPage * PageSize]),numBytes, position);
-    pageTable[i].valid = TRUE;
-    return TRUE;
+    delete pageTable;
+    delete exeFileId;
 }
 
 //----------------------------------------------------------------------
@@ -368,21 +258,4 @@ AddrSpace::Translate(unsigned int vaddr, unsigned int *paddr, int isReadWrite)
     //  ", paddr: " << *paddr << "\n";
 
     return NoException;
-}
-
-//将Vaddr所在的一页由磁盘加载到内存中
-bool AddrSpace::LoadOnePage(int VAddr)
-{
-    OpenFile *executable = kernel->fileSystem->Open(this->userProgName);
-    
-    int physPage = kernel->machine->memoryMap->FindAndSet();
-    ASSERT(physPage >= 0);
-    int virtPage = (unsigned) VAddr / PageSize;
-
-    TranslationEntry * entry = &(kernel->machine->pageTable[virtPage]);
-    entry->physicalPage = physPage;
-    entry->valid = TRUE;
-    entry->use = FALSE;
-    entry->dirty = FALSE;
-    executable->ReadAt(&(kernel->machine->mainMemory[physPage * PageSize]), PageSize, virtPage * PageSize + sizeof(NoffHeader));
 }

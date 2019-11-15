@@ -2,13 +2,14 @@
  * @Author: Lollipop
  * @Date: 2019-11-12 10:31:32
  * @LastEditors: Lollipop
- * @LastEditTime: 2019-11-12 11:28:00
+ * @LastEditTime: 2019-11-15 12:04:49
  * @Description: 全局虚存管理器。维护一个virtMemTable数组记录每个进程的AddrSpace指针，进程ID作为数组下标
  */
 #ifndef VIRTMEMMANAGER_H
 #define VIRTMEMMANAGER_H 
 
 #include "addrspace.h"
+#include "translate.h"
 
 #define MAX_VIRT_PAGES 4096
 
@@ -22,7 +23,7 @@ public:
     VirtMemManager(int size);
     ~VirtMemManager();
 
-    AddrSpace* createAddrSpace(int mainThreadId, OpenFile* executable);
+    AddrSpace* createAddrSpace(int mainThreadId, char* filename);
     AddrSpace* getAddrSpaceOfThread(int threadId);
     //TODO:shareAddrSpace()
     void deleteAddrSpace(int threadId);

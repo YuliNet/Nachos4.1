@@ -2,10 +2,11 @@
  * @Author: Lollipop
  * @Date: 2019-11-12 10:44:37
  * @LastEditors: Lollipop
- * @LastEditTime: 2019-11-12 11:28:45
+ * @LastEditTime: 2019-11-15 12:07:45
  * @Description: 这里有一个问题：所有进程的虚拟页总和不能大于MAX_VIRT_PAGES，而且不同进程的虚拟地址大小不同
  */
 #include "VirtMemManager.h"
+#include "main.h"
 
 VirtMemManager::VirtMemManager(int size)
 {
@@ -27,7 +28,7 @@ VirtMemManager::~VirtMemManager()
 }
 
 AddrSpace*
-VirtMemManager::createAddrSpace(int mainThreadId, OpenFile* executable)
+VirtMemManager::createAddrSpace(int mainThreadId, char* filename)
 {
     AddrSpace* entry;
 
@@ -37,7 +38,7 @@ VirtMemManager::createAddrSpace(int mainThreadId, OpenFile* executable)
         return entry;
     }
 
-    entry = new AddrSpace(mainThreadId, executable);
+    entry = new AddrSpace(mainThreadId, filename);
 
     int size = entry->getNumPages();
     if (virtPageNums + size > MAX_VIRT_PAGES) //这里所有的进程共用一个虚拟地址空间？为什么要限制全局虚拟页的数量？而且各个进程的虚拟地址空间大小不相同
@@ -69,13 +70,12 @@ VirtMemManager::deleteAddrSpace(int threadId)
         {
             TranslationEntry* pageTable = entry->getPageTable();
             int size = entry->getNumPages();
-
-            PhyMemManger* PhyManger = memoryManger->getPhyMemManger();
+            PhyMemManager* PhyManager = kernel->memoryManager->getPhyMemManager();
             for (int i = 0; i < size; i++)
             {
                 if (pageTable[i].valid)
                 {
-                    PhyManger->clearOnePage(pageTable[i].physicalPage);
+                    PhyManager->clearOnePage(pageTable[i].physicalPage);
 
                 }
             }
@@ -87,7 +87,7 @@ VirtMemManager::deleteAddrSpace(int threadId)
 }
 
 AddrSpace*
-VirtMemManger::getAddrSpaceOfThread(int threadId)
+VirtMemManager::getAddrSpaceOfThread(int threadId)
 {
     if (threadId >= 0 && threadId < virtMemTableSize)
     {

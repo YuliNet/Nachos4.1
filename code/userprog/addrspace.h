@@ -2,7 +2,7 @@
  * @Author: Lollipop
  * @Date: 2019-11-03 21:19:35
  * @LastEditors: Lollipop
- * @LastEditTime: 2019-11-12 11:11:32
+ * @LastEditTime: 2019-11-15 13:47:41
  * @Description: 
  */
 // addrspace.h 
@@ -23,23 +23,15 @@
 #include "copyright.h"
 #include "filesys.h"
 #include "noff.h"
+#include "translate.h"
+#include "machine.h"
 
-#define UserThreadMax 10
-#define UserThreadStackSize 1024
-#define UserStackSize		(UserThreadMax * UserThreadStackSize) 	// increase this as necessary!
+#define UserStackSize		1024 	// increase this as necessary!
 
 class AddrSpace {
   public:
-    AddrSpace();			// Create an address space.
-    AddrSpace(char* filename);
-    AddrSpace(int threadId, OpenFile* executable);
+    AddrSpace(int threadId, char* fileName);
     ~AddrSpace();			// De-allocate an address space
-
-    bool Load(char *fileName);		// Load a program into addr space from
-                                        // a file
-					// return false if not found
-    bool LoadSegment(Segment *seg, OpenFile *executable);
-    bool LoadOnePage(int VAddr);
 
     void Execute();             	// Run a program
 					// assumes the program has already
@@ -51,18 +43,18 @@ class AddrSpace {
     TranslationEntry* getPageTable() {return pageTable;}
     int getNumPages() {return numPages;}
 
+    OpenFile* getExeFileId() {return exeFileId;}
+
     // Translate virtual address _vaddr_
     // to physical address _paddr_. _mode_
     // is 0 for Read, 1 for Write.
     ExceptionType Translate(unsigned int vaddr, unsigned int *paddr, int mode);
-    char * userProgName; 
 
   private:
     TranslationEntry *pageTable;
 
     int threadId;
     unsigned int numPages;		// Number of pages in the virtual address space
-    int stackSpace[UserThreadMax];
     OpenFile* exeFileId;
     
     void InitRegisters();		// Initialize user-level CPU registers,

@@ -31,6 +31,7 @@ Kernel::Kernel(int argc, char **argv)
     consoleIn = NULL;          // default is stdin
     consoleOut = NULL;         // default is stdout
     threadManager = NULL;
+    memoryManager = NULL;
 #ifndef FILESYS_STUB
     formatFlag = FALSE;
 #endif
@@ -110,7 +111,7 @@ Kernel::Initialize()
 #endif // FILESYS_STUB
     postOfficeIn = new PostOfficeInput(10);
     postOfficeOut = new PostOfficeOutput(reliability);
-
+    memoryManager = new MemoryManager();
     interrupt->Enable();
 }
 
@@ -132,8 +133,8 @@ Kernel::~Kernel()
     delete fileSystem;
     delete postOfficeIn;
     delete postOfficeOut;
-    
     delete threadManager;
+    delete memoryManager;
     Exit(0);
 }
 

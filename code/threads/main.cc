@@ -321,11 +321,8 @@ int main(int argc, char **argv)
     // finally, run an initial user program if requested to do so
     if (userProgName != NULL)
     {
-        OpenFile* executable = fileSystem->Open(userProgName);
-        
-        AddrSpace *space = new AddrSpace(userProgName);
+        AddrSpace* space = kernel->memoryManager->createAddrSpace(kernel->currentThread->getPid(), userProgName);
         ASSERT(space != (AddrSpace *)NULL);
-        kernel->machine->currentAddrSpace = space;
         space->Execute();   // run the program
         ASSERTNOTREACHED(); // Execute never returns
     }

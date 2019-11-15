@@ -24,7 +24,7 @@
 #include "copyright.h"
 #include "utility.h"
 #include "translate.h"
-#include "bitmap.h"
+#include "TLBManager.h"
 
 enum ExceptionType
 {
@@ -103,7 +103,6 @@ public:
 
 	char *mainMemory;  // physical memory to store user program,
 					   // code and data, while executing
-	Bitmap *memoryMap; //位图，记录内存的分配和回收
 
 	// NOTE: the hardware translation of virtual addresses in the user program
 	// to physical addresses (relative to the beginning of "mainMemory")
@@ -123,12 +122,11 @@ public:
 	// Thus the TLB pointer should be considered as *read-only*, although
 	// the contents of the TLB are free to be modified by the kernel software.
 
-	TLB *tlb; // this pointer should be considered
+	TLBManager *tlbManager; // this pointer should be considered
 			  // "read-only" to Nachos kernel code
 
 	TranslationEntry *pageTable;
 	unsigned int pageTableSize;
-	AddrSpace* currentAddrSpace;
 
 	bool ReadMem(int addr, int size, int *value);
 	bool WriteMem(int addr, int size, int value);

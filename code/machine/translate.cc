@@ -95,7 +95,14 @@ bool Machine::ReadMem(int addr, int size, int *value)
 	if (exception != NoException)
 	{
 		RaiseException(exception, addr);
-		return FALSE;
+		if (exception == PageFaultException)
+		{
+			exception = Translate(addr, &physicalAddress, size, FALSE);
+		}
+		else
+		{
+			return FALSE;
+		}
 	}
 	switch (size)
 	{
@@ -146,7 +153,15 @@ bool Machine::WriteMem(int addr, int size, int value)
 	if (exception != NoException)
 	{
 		RaiseException(exception, addr);
-		return FALSE;
+		if (exception == PageFaultException)
+		{
+			exception = Translate(addr, &physicalAddress, size, TRUE);
+		}
+		else
+		{
+			return FALSE;
+		}
+		
 	}
 	switch (size)
 	{
@@ -187,7 +202,6 @@ bool Machine::WriteMem(int addr, int size, int value)
 ExceptionType
 Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 {
-	int i;
 	unsigned int vpn, offset;
 	TranslationEntry *entry;
 	unsigned int pageFrame;
@@ -210,17 +224,17 @@ Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 	vpn = (unsigned)virtAddr / PageSize;
 	offset = (unsigned)virtAddr % PageSize;
 
+#ifdef USE_TLB
 	//首先在TLB中查找，如果成功则返回，否则在页表中查找，并更新TLB。
-	if (tlb != NULL)
+
+	int res = tlbManager->translate(virtAddr);
+	if (res >= 0)
 	{
-		int res = tlb->translate(virtAddr);
-		if (res >= 0)
-		{
-			DEBUG(dbgLru, "use TLB ");
-			*physAddr = res;
-			return NoException;
-		}
+		DEBUG(dbgLru, "use TLB ");
+		*physAddr = res;
+		return NoException;
 	}
+#endif
 
 	//tlb miss,查页表
 	if (vpn >= pageTableSize)
@@ -251,11 +265,10 @@ Machine::Translate(int virtAddr, int *physAddr, int size, bool writing)
 		return BusErrorException;
 	}
 
+#ifdef USE_TLB
 	//更新TLB
-	if (tlb!=NULL)
-	{
-		tlb->update(virtAddr, pageFrame);
-	}
+	tlbManager->update(virtAddr, pageFrame);
+#endif
 
 	//entry->use = TRUE; // set the use, dirty bits
 	if (writing)

@@ -60,15 +60,13 @@ Machine::Machine(bool debug)
     mainMemory = new char[PhysicalMemorySize];
     for (i = 0; i < PhysicalMemorySize; i++)
         mainMemory[i] = 0;
-    memoryMap = new Bitmap(NumPhysPages);
 #ifdef USE_TLB
-    tlb = new TLB();
+    tlbManager = new TLBManager();
     pageTable = NULL;
 #else // use linear page table
-    tlb = NULL;
+    tlbManager = NULL;
     pageTable = NULL;
 #endif
-    currentAddrSpace = NULL;
     singleStep = debug;
     CheckEndian();
 }
@@ -81,9 +79,8 @@ Machine::Machine(bool debug)
 Machine::~Machine()
 {
     delete[] mainMemory;
-    delete memoryMap;
-#ifdef UST_TLB
-        delete tlb;
+#ifdef USE_TLB
+        delete tlbManager;
 #endif
 }
 
