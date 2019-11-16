@@ -76,7 +76,7 @@ List<T>::Append(T item)
 {
     ListElement<T> *element = new ListElement<T>(item);
 
-    ASSERT(!IsInList(item));
+    //ASSERT(!IsInList(item)); 为什么一定要不重复？
     if (this->IsEmpty()) {		// list is empty
 	this->first = element;
 	this->last = element;
