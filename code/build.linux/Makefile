@@ -285,8 +285,9 @@ THREAD_C = ../threads/alarm.cc\
 	../threads/synchlist.cc\
 	../threads/thread.cc\
 	../threads/ThreadManager.cc\
+	../threads/synctest.cc\
 
-THREAD_O = alarm.o kernel.o main.o scheduler.o synch.o thread.o ThreadManager.o
+THREAD_O = alarm.o kernel.o main.o scheduler.o synch.o thread.o ThreadManager.o synctest.o
 
 USERPROG_H = ../userprog/addrspace.h\
 	../userprog/syscall.h\

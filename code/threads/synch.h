@@ -76,7 +76,6 @@ class Lock {
     		return lockHolder == kernel->currentThread; }
     				// return true if the current thread 
 				// holds this lock.
-    
     // Note: SelfTest routine provided by SynchList
     
   private:

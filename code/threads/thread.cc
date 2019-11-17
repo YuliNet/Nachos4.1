@@ -123,7 +123,7 @@ void Thread::Fork(VoidFunctionPtr func, void *arg)
     IntStatus oldLevel;
 
     DEBUG(dbgThread, "Forking thread: " << name << " f(a): " << (int)func << " " << arg);
-
+    
     StackAllocate(func, arg);
 
     oldLevel = interrupt->SetLevel(IntOff);
