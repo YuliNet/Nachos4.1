@@ -139,4 +139,40 @@ class Condition {
     char* name;
     List<Semaphore *> *waitQueue;	// list of waiting threads
 };
+
+class Barrier
+{
+public:
+  Barrier(int numOfThreads);
+  ~Barrier();
+
+  void Wait();
+
+private:
+  int total;
+  int count;
+
+  Lock* mutex;
+  Condition* helper;
+};
+
+class rwLock
+{
+public:
+  rwLock();
+  ~rwLock();
+
+  void read_lock();
+  void read_unlock();
+
+  void write_lock();
+  void write_unlock();
+
+  //void selfTest();
+
+private:
+  int readerCnt;
+  Lock* readerCntLock;
+  Lock* shareDataLock;
+};
 #endif // SYNCH_H

@@ -303,3 +303,80 @@ void Condition::Broadcast(Lock *conditionLock)
         Signal(conditionLock);
     }
 }
+
+
+Barrier::Barrier(int numOfThreads)
+{
+    count = 0;
+    total = numOfThreads;
+    mutex = new Lock("mutex");
+    helper = new Condition("helper");
+}
+
+Barrier::~Barrier()
+{
+    delete mutex;
+    delete helper;
+}
+
+void
+Barrier::Wait()
+{
+    mutex->Acquire();
+    count++;
+    if (count < total)
+        helper->Wait(mutex);
+    else if (count == total)
+        helper->Broadcast(mutex);
+    mutex->Release();
+}
+
+
+rwLock::rwLock()
+{
+    readerCnt = 0;
+    readerCntLock = new Lock("readerCntLock");
+    shareDataLock = new Lock("shareDataLock");
+}
+
+rwLock::~rwLock()
+{
+    delete readerCntLock;
+    delete shareDataLock;
+}
+
+void
+rwLock::read_lock()
+{
+    readerCntLock->Acquire();
+    readerCnt++;
+    if (readerCnt == 1)
+    {
+        shareDataLock->Acquire();
+    }
+    readerCntLock->Release();
+}
+
+void
+rwLock::read_unlock()
+{
+    readerCntLock->Acquire();
+    readerCnt--;
+    if (readerCnt == 0)
+    {
+        shareDataLock->Release();
+    }
+    readerCntLock->Release();
+}
+
+void
+rwLock::write_lock()
+{
+    shareDataLock->Acquire();
+}
+
+void
+rwLock::write_unlock()
+{
+    shareDataLock->Release();
+}

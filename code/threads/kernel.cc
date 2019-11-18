@@ -20,8 +20,10 @@
 
 // #include "synctest.cc"
 void test();
-void test2();
+void ConditionProduceConsumerTest();
 void SemaphoreRWTest();
+void BarrierTest();
+void rwLockTest();
 //----------------------------------------------------------------------
 // Kernel::Kernel
 // 	Interpret command line arguments in order to determine flags
@@ -185,7 +187,9 @@ void Kernel::ThreadSelfTest()
     // synchList = new SynchList<int>;
     // synchList->SelfTest(9);
     // delete synchList;
-    SemaphoreRWTest();
+    
+    //ConditionProduceConsumerTest();
+    rwLockTest();
 }
 
 //----------------------------------------------------------------------

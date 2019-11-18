@@ -2,7 +2,7 @@
  * @Author: Lollipop
  * @Date: 2019-11-17 09:45:43
  * @LastEditors: Lollipop
- * @LastEditTime: 2019-11-17 20:58:18
+ * @LastEditTime: 2019-11-18 11:49:37
  * @Description: 
  */
 
@@ -245,22 +245,83 @@ void SemaphoreRWTest()
     }
 }
 
-void Condition_read(void*)
-{
+Barrier* barrier;
 
+void simpleThread(int* n)
+{
+        DEBUG(dbgSynch, "enter simpleThread");
+        barrier->Wait();
+        DEBUG(dbgSynch, "after barrier");
 }
 
-void Condition_write(void*)
+void BarrierTest()
 {
+    barrier = new Barrier(3);
 
+    Thread* thread1 = kernel->threadManager->createThread("thread1");
+    Thread* thread2 = kernel->threadManager->createThread("thread2");
+    Thread* thread3 = kernel->threadManager->createThread("thread3");
+    
+    int n = 1;
+    thread1->Fork((VoidFunctionPtr)simpleThread, &n);
+    thread2->Fork((VoidFunctionPtr)simpleThread, &n);
+    thread3->Fork((VoidFunctionPtr)simpleThread, &n);
+
+    while (1)
+    {
+        kernel->currentThread->Yield();
+    }
 }
 
 
+rwLock* rwlock;
+int RwTest_num;
 
-
-void ConditionRWTest()
+void rwLockReader(int* n)
 {
+    for (int i = 0; i < *n; i++)
+    {
+        rwlock->read_lock();
+        DEBUG(dbgSynch, "read : " << RwTest_num);
+        rwlock->read_unlock();
+        kernel->currentThread->Yield();
+    }
+}
 
+void rwLockWrite(int* n)
+{
+    for (int i = 0; i < *n; i++)
+    {
+        rwlock->write_lock();
+        RwTest_num = produce_item();
+        DEBUG(dbgSynch, "write : " << RwTest_num);
+        rwlock->write_unlock();
+        kernel->currentThread->Yield();
+    }
+}
+
+void rwLockTest()
+{
+    rwlock = new rwLock();
+
+    Thread* reader1 = kernel->threadManager->createThread("reader1");
+    Thread* reader2 = kernel->threadManager->createThread("reader2");
+    Thread* reader3 = kernel->threadManager->createThread("reader3");
+    
+    Thread* writer1 = kernel->threadManager->createThread("writer1");
+    Thread* writer2 = kernel->threadManager->createThread("writer2");
+    
+    int n = 3;
+    reader1->Fork((VoidFunctionPtr)rwLockReader, &n);
+    reader2->Fork((VoidFunctionPtr)rwLockReader, &n);
+    writer1->Fork((VoidFunctionPtr)rwLockWrite, &n);
+    writer2->Fork((VoidFunctionPtr)rwLockWrite, &n);
+    reader3->Fork((VoidFunctionPtr)rwLockReader, &n);
+    
+    while(1)
+    {
+        kernel->currentThread->Yield();
+    }
 }
 
 
