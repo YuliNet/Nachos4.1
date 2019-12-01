@@ -152,7 +152,13 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
     if ((numBytes <= 0) || (position >= fileLength))
 	return 0;				// check request
     if ((position + numBytes) > fileLength)
-	numBytes = fileLength - position;
+	{
+        int n = (position + numBytes - fileLength) / SectorSize + 1;    //需要增加的扇区个数
+        if (!hdr->AllocateMemory(n))
+            return 0;
+        hdr->setNumBytes(position + numBytes);
+        hdr->WriteBack();
+    }
     DEBUG(dbgFile, "Writing " << numBytes << " bytes at " << position << " from file of length " << fileLength);
 
     firstSector = divRoundDown(position, SectorSize);

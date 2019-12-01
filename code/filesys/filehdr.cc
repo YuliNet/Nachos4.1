@@ -60,6 +60,23 @@ FileHeader::Allocate(PersistentIntmap *freeMap, int fileSize)
     return TRUE;
 }
 
+bool
+FileHeader::AllocateMemory(int n)
+{
+    PersistentIntmap *freeMap = kernel->fileSystem->GetFreeMap();
+
+    if (freeMap->NumClear() < n)
+        return FALSE;
+    
+    for (int i = 0; i < n; i++)
+    {
+        int next = freeMap->FindAndSet();
+        freeMap->Mark(lastSector, next);
+        lastSector = next;
+    }
+    numSectors += n;
+}
+
 //----------------------------------------------------------------------
 // FileHeader::Deallocate
 // 	De-allocate all the space allocated for data blocks for this file.
@@ -91,6 +108,7 @@ void
 FileHeader::FetchFrom(int sector)
 {
     kernel->synchDisk->ReadSector(sector, (char *)this);
+    selfSector = sector;
 }
 
 //----------------------------------------------------------------------
@@ -104,6 +122,12 @@ void
 FileHeader::WriteBack(int sector)
 {
     kernel->synchDisk->WriteSector(sector, (char *)this); 
+}
+
+void
+FileHeader::WriteBack()
+{
+    WriteBack(selfSector);
 }
 
 //----------------------------------------------------------------------

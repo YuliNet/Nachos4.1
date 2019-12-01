@@ -46,6 +46,7 @@ class FileHeader {
     void FetchFrom(int sectorNumber); 	// Initialize file header from disk
     void WriteBack(int sectorNumber); 	// Write modifications to file header
 					//  back to disk
+    void WriteBack();
 
     int ByteToSector(int offset);	// Convert a byte offset into the file
 					// to the disk sector containing
@@ -56,6 +57,11 @@ class FileHeader {
 
     void Print();			// Print the contents of the file.
 
+    bool AllocateMemory(int numSectors);
+
+    void SetSelfSector(int sector) {selfSector = sector;};
+    void setNumBytes(int n) {numBytes = n;};
+
   private:
     int numBytes;			// Number of bytes in the file
     int numSectors;			// Number of data sectors in the file
@@ -64,6 +70,7 @@ class FileHeader {
     TimeWrapper accessTime;
     TimeWrapper modifyTime;
 
+    int selfSector;
     int firstSector;
     int lastSector;
 };

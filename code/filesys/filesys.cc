@@ -94,6 +94,9 @@ FileSystem::FileSystem(bool format)
 	freeMap->Mark(FreeMapSector);	    
 	freeMap->Mark(DirectorySector);
 
+    mapHdr->SetSelfSector(FreeMapSector);
+    dirHdr->SetSelfSector(DirectorySector);
+
     // Second, allocate space for the data blocks containing the contents
     // of the directory and bitmap files.  There better be enough space!
 
@@ -196,12 +199,13 @@ FileSystem::Create(char *name, int initialSize)
             success = FALSE;	// no space in directory
 	else {
     	    hdr = new FileHeader;
+            hdr->SetSelfSector(sector);
 	    if (!hdr->Allocate(freeMap, initialSize))
             	success = FALSE;	// no space on disk for data
 	    else {	
 	    	success = TRUE;
 		// everthing worked, flush all changes back to disk
-    	    	hdr->WriteBack(sector); 		
+                hdr->WriteBack(sector); 		
     	    	directory->WriteBack(directoryFile);
     	    	freeMap->WriteBack(freeMapFile);
 	    }
