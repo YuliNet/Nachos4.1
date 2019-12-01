@@ -7,10 +7,10 @@
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
-#include "pbitmap.h"
+#include "pintmap.h"
 
 //----------------------------------------------------------------------
-// PersistentBitmap::PersistentBitmap(int)
+// PersistentIntmap::PersistentIntmap(int)
 // 	Initialize a bitmap with "numItems" bits, so that every bit is clear.
 //	it can be added somewhere on a list.
 //
@@ -19,61 +19,61 @@
 //      This constructor does not initialize the bitmap from a disk file
 //----------------------------------------------------------------------
 
-PersistentBitmap::PersistentBitmap(int numItems):Bitmap(numItems) 
+PersistentIntmap::PersistentIntmap(int numItems):IntMap(numItems) 
 { 
 }
 
 //----------------------------------------------------------------------
-// PersistentBitmap::PersistentBitmap(OpenFile*,int)
+// PersistentIntmap::PersistentIntmap(OpenFile*,int)
 // 	Initialize a persistent bitmap with "numItems" bits,
 //      so that every bit is clear.
 //
 //	"numItems" is the number of bits in the bitmap.
 //      "file" refers to an open file containing the bitmap (written
-//        by a previous call to PersistentBitmap::WriteBack
+//        by a previous call to PersistentIntmap::WriteBack
 //
 //      This constructor initializes the bitmap from a disk file
 //----------------------------------------------------------------------
 
-PersistentBitmap::PersistentBitmap(OpenFile *file, int numItems):Bitmap(numItems) 
+PersistentIntmap::PersistentIntmap(OpenFile *file, int numItems):IntMap(numItems) 
 { 
     // map has already been initialized by the BitMap constructor,
     // but we will just overwrite that with the contents of the
     // map found in the file
-    file->ReadAt((char *)map, numWords * sizeof(unsigned), 0);
+    file->ReadAt((char *)map, numItems * sizeof(int), 0);
 }
 
 //----------------------------------------------------------------------
-// PersistentBitmap::~PersistentBitmap
+// PersistentIntmap::~PersistentIntmap
 // 	De-allocate a persistent bitmap.
 //----------------------------------------------------------------------
 
-PersistentBitmap::~PersistentBitmap()
+PersistentIntmap::~PersistentIntmap()
 { 
 }
 
 //----------------------------------------------------------------------
-// PersistentBitmap::FetchFrom
+// PersistentIntmap::FetchFrom
 // 	Initialize the contents of a persistent bitmap from a Nachos file.
 //
 //	"file" is the place to read the bitmap from
 //----------------------------------------------------------------------
 
 void
-PersistentBitmap::FetchFrom(OpenFile *file) 
+PersistentIntmap::FetchFrom(OpenFile *file) 
 {
-    file->ReadAt((char *)map, numWords * sizeof(unsigned), 0);
+    file->ReadAt((char *)map, numItems * sizeof(int), 0);
 }
 
 //----------------------------------------------------------------------
-// PersistentBitmap::WriteBack
+// PersistentIntmap::WriteBack
 // 	Store the contents of a persistent bitmap to a Nachos file.
 //
 //	"file" is the place to write the bitmap to
 //----------------------------------------------------------------------
 
 void
-PersistentBitmap::WriteBack(OpenFile *file)
+PersistentIntmap::WriteBack(OpenFile *file)
 {
-   file->WriteAt((char *)map, numWords * sizeof(unsigned), 0);
+   file->WriteAt((char *)map, numItems * sizeof(int), 0);
 }

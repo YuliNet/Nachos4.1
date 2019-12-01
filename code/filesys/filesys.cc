@@ -47,7 +47,7 @@
 #include "copyright.h"
 #include "debug.h"
 #include "disk.h"
-#include "pbitmap.h"
+#include "pintmap.h"
 #include "directory.h"
 #include "filehdr.h"
 #include "filesys.h"
@@ -61,7 +61,7 @@
 // Initial file sizes for the bitmap and directory; until the file system
 // supports extensible files, the directory size sets the maximum number 
 // of files that can be loaded onto the disk.
-#define FreeMapFileSize 	(NumSectors / BitsInByte)
+#define FreeMapFileSize 	(NumSectors * sizeof(int))
 #define NumDirEntries 		10
 #define DirectoryFileSize 	(sizeof(DirectoryEntry) * NumDirEntries)
 
@@ -82,7 +82,7 @@ FileSystem::FileSystem(bool format)
 { 
     DEBUG(dbgFile, "Initializing the file system.");
     if (format) {
-        PersistentBitmap *freeMap = new PersistentBitmap(NumSectors);
+        PersistentIntmap *freeMap = new PersistentIntmap(NumSectors);
         Directory *directory = new Directory(NumDirEntries);
 	FileHeader *mapHdr = new FileHeader;
 	FileHeader *dirHdr = new FileHeader;
@@ -175,7 +175,7 @@ bool
 FileSystem::Create(char *name, int initialSize)
 {
     Directory *directory;
-    PersistentBitmap *freeMap;
+    PersistentIntmap *freeMap;
     FileHeader *hdr;
     int sector;
     bool success;
@@ -188,7 +188,7 @@ FileSystem::Create(char *name, int initialSize)
     if (directory->Find(name) != -1)
       success = FALSE;			// file is already in directory
     else {	
-        freeMap = new PersistentBitmap(freeMapFile,NumSectors);
+        freeMap = new PersistentIntmap(freeMapFile,NumSectors);
         sector = freeMap->FindAndSet();	// find a sector to hold the file header
     	if (sector == -1) 		
             success = FALSE;		// no free block for file header 
@@ -257,7 +257,7 @@ bool
 FileSystem::Remove(char *name)
 { 
     Directory *directory;
-    PersistentBitmap *freeMap;
+    PersistentIntmap *freeMap;
     FileHeader *fileHdr;
     int sector;
     
@@ -271,7 +271,7 @@ FileSystem::Remove(char *name)
     fileHdr = new FileHeader;
     fileHdr->FetchFrom(sector);
 
-    freeMap = new PersistentBitmap(freeMapFile,NumSectors);
+    freeMap = new PersistentIntmap(freeMapFile,NumSectors);
 
     fileHdr->Deallocate(freeMap);  		// remove data blocks
     freeMap->Clear(sector);			// remove header block
@@ -315,7 +315,7 @@ FileSystem::Print()
 {
     FileHeader *bitHdr = new FileHeader;
     FileHeader *dirHdr = new FileHeader;
-    PersistentBitmap *freeMap = new PersistentBitmap(freeMapFile,NumSectors);
+    PersistentIntmap *freeMap = new PersistentIntmap(freeMapFile,NumSectors);
     Directory *directory = new Directory(NumDirEntries);
 
     printf("Bit map file header:\n");
@@ -335,6 +335,13 @@ FileSystem::Print()
     delete dirHdr;
     delete freeMap;
     delete directory;
-} 
+}
+
+PersistentIntmap*
+FileSystem::GetFreeMap()
+{
+    PersistentIntmap *freeMap = new PersistentIntmap(freeMapFile,NumSectors);
+    return freeMap;
+}
 
 #endif // FILESYS_STUB

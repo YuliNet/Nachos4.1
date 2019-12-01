@@ -15,10 +15,10 @@
 #define FILEHDR_H
 
 #include "disk.h"
-#include "pbitmap.h"
+#include "pintmap.h"
+#include "time.h"
 
-#define NumDirect 	((SectorSize - 2 * sizeof(int)) / sizeof(int))
-#define MaxFileSize 	(NumDirect * SectorSize)
+typedef time_t TimeWrapper;
 
 // The following class defines the Nachos "file header" (in UNIX terms,  
 // the "i-node"), describing where on disk to find all of the data in the file.
@@ -37,10 +37,10 @@
 
 class FileHeader {
   public:
-    bool Allocate(PersistentBitmap *bitMap, int fileSize);// Initialize a file header, 
+    bool Allocate(PersistentIntmap *intMap, int fileSize);// Initialize a file header, 
 						//  including allocating space 
 						//  on disk for the file data
-    void Deallocate(PersistentBitmap *bitMap);  // De-allocate this file's 
+    void Deallocate(PersistentIntmap *intMap);  // De-allocate this file's 
 						//  data blocks
 
     void FetchFrom(int sectorNumber); 	// Initialize file header from disk
@@ -59,8 +59,13 @@ class FileHeader {
   private:
     int numBytes;			// Number of bytes in the file
     int numSectors;			// Number of data sectors in the file
-    int dataSectors[NumDirect];		// Disk sector numbers for each data 
-					// block in the file
+
+    TimeWrapper createTime;
+    TimeWrapper accessTime;
+    TimeWrapper modifyTime;
+
+    int firstSector;
+    int lastSector;
 };
 
 #endif // FILEHDR_H

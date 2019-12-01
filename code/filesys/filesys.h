@@ -36,6 +36,8 @@
 #include "copyright.h"
 #include "sysdep.h"
 #include "openfile.h"
+#include "directory.h"
+#include "pintmap.h"
 
 #ifdef FILESYS_STUB 		// Temporarily implement file system calls as 
 				// calls to UNIX, until the real file system
@@ -84,11 +86,16 @@ class FileSystem {
 
     void Print();			// List all the files and their contents
 
-  private:
+	friend class FileHeader;
+
+private:
    OpenFile* freeMapFile;		// Bit map of free disk blocks,
 					// represented as a file
    OpenFile* directoryFile;		// "Root" directory -- list of 
 					// file names, represented as a file
+
+    Directory* GetDirectory();
+	PersistentIntmap* GetFreeMap();
 };
 
 #endif // FILESYS

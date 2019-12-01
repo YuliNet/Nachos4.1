@@ -191,7 +191,7 @@
 # of "-DSIM_FIX" to the DEFINES.  This should be enabled by default
 # and eventually will not require the symbol definition
 ################################################################
-DEFINES =  -DFILESYS_STUB -DRDATA -DSIM_FIX -DTUT -DUSE_TLB -DUSER_PROGRAM -DUSE_TLB
+DEFINES = -DRDATA -DSIM_FIX -DTUT -DUSE_TLB -DUSER_PROGRAM -DUSE_TLB
 
 
 #####################################################################
@@ -228,16 +228,18 @@ LIB_H = ../lib/bitmap.h\
 	../lib/sysdep.h\
 	../lib/tut.h\
 	../lib/tut_reporter.h\
-	../lib/utility.h
+	../lib/utility.h\
+	../lib/intmap.h\
 
 LIB_C = ../lib/bitmap.cc\
 	../lib/debug.cc\
 	../lib/hash.cc\
 	../lib/libtest.cc\
 	../lib/list.cc\
-	../lib/sysdep.cc
+	../lib/sysdep.cc\
+	../lib/intmap.cc\
 
-LIB_O = bitmap.o debug.o libtest.o sysdep.o
+LIB_O = bitmap.o debug.o libtest.o sysdep.o intmap.o
 
 
 MACHINE_H = ../machine/callback.h\
@@ -303,17 +305,17 @@ FILESYS_H =../filesys/directory.h \
 	../filesys/filehdr.h\
 	../filesys/filesys.h \
 	../filesys/openfile.h\
-	../filesys/pbitmap.h\
+	../filesys/pintmap.h\
 	../filesys/synchdisk.h
 
 FILESYS_C =../filesys/directory.cc\
 	../filesys/filehdr.cc\
 	../filesys/filesys.cc\
-	../filesys/pbitmap.cc\
+	../filesys/pintmap.cc\
 	../filesys/openfile.cc\
 	../filesys/synchdisk.cc\
 
-FILESYS_O =directory.o filehdr.o filesys.o pbitmap.o openfile.o synchdisk.o
+FILESYS_O =directory.o filehdr.o filesys.o pintmap.o openfile.o synchdisk.o
 
 NETWORK_H = ../network/post.h
 
