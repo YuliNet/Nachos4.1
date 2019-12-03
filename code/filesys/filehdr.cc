@@ -175,22 +175,5 @@ FileHeader::FileLength()
 void
 FileHeader::Print()
 {
-    // int i, j, k;
-    // char *data = new char[SectorSize];
-
-    // printf("FileHeader contents.  File size: %d.  File blocks:\n", numBytes);
-    // for (i = 0; i < numSectors; i++)
-	// printf("%d ", dataSectors[i]);
-    // printf("\nFile contents:\n");
-    // for (i = k = 0; i < numSectors; i++) {
-	// kernel->synchDisk->ReadSector(dataSectors[i], data);
-    //     for (j = 0; (j < SectorSize) && (k < numBytes); j++, k++) {
-	//     if ('\040' <= data[j] && data[j] <= '\176')   // isprint(data[j])
-	// 	printf("%c", data[j]);
-    //         else
-	// 	printf("\\%x", (unsigned char)data[j]);
-	// }
-    //     printf("\n"); 
-    // }
-    // delete [] data;
+    cout << "File Header contents. File name : " << name << " File size : " << numBytes << " bytes " << "File path : " << filepath << endl;
 }

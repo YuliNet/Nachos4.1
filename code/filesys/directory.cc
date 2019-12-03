@@ -23,6 +23,7 @@
 #include "utility.h"
 #include "filehdr.h"
 #include "directory.h"
+#include "debug.h"
 
 //----------------------------------------------------------------------
 // Directory::Directory
@@ -33,6 +34,11 @@
 //
 //	"size" is the number of entries in the directory
 //----------------------------------------------------------------------
+Directory::Directory()
+{
+    table = NULL;
+    tableSize = 0;
+}
 
 Directory::Directory(int size)
 {
@@ -59,10 +65,18 @@ Directory::~Directory()
 //	"file" -- file containing the directory contents
 //----------------------------------------------------------------------
 
+// void
+// Directory::FetchFrom(OpenFile *file)
+// {
+//     (void) file->ReadAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+// }
+
 void
-Directory::FetchFrom(OpenFile *file)
+Directory::FetchFrom(OpenFile* file)
 {
-    (void) file->ReadAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+    (void) file->ReadAt((char*)&tableSize, sizeof(int), 0);
+    table = new DirectoryEntry[tableSize];
+    (void) file->ReadAt((char*)&table, tableSize * sizeof(DirectoryEntry), sizeof(int));
 }
 
 //----------------------------------------------------------------------
@@ -72,10 +86,17 @@ Directory::FetchFrom(OpenFile *file)
 //	"file" -- file to contain the new directory contents
 //----------------------------------------------------------------------
 
+// void
+// Directory::WriteBack(OpenFile *file)
+// {
+//     (void) file->WriteAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+// }
+
 void
 Directory::WriteBack(OpenFile *file)
 {
-    (void) file->WriteAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+    (void) file->WriteAt((char*)&tableSize, sizeof(int), 0);
+    (void) file->WriteAt((char*)table, tableSize * sizeof(DirectoryEntry), sizeof(int));
 }
 
 //----------------------------------------------------------------------
@@ -90,7 +111,7 @@ int
 Directory::FindIndex(char *name)
 {
     for (int i = 0; i < tableSize; i++)
-        if (table[i].inUse && !strncmp(table[i].name, name, FileNameMaxLen))
+        if (table[i].inUse && !strncmp(table[i].name, name, FileNameMaxLen)) //这里的strncmp可以改为strcmp吗？
 	    return i;
     return -1;		// name not in directory
 }
@@ -112,6 +133,56 @@ Directory::Find(char *name)
     if (i != -1)
 	return table[i].sector;
     return -1;
+}
+
+int
+Directory::FindWithFullPath(char* name)
+{
+    if (name[0] != '/')
+    {
+        DEBUG(dbgFile, "name must start with /");
+        return -1;
+    }
+    
+    int i;
+    for (i = 1; i < strlen(name) && name[i] != '/'; i++);
+
+    char filename[FileNameMaxLen + 1];
+    strncpy(filename, &name[1], FileNameMaxLen);
+    if (i <= FileNameMaxLen)
+    {
+        filename[i] = '\0';
+
+    }
+    else
+    {
+        filename[FileNameMaxLen] = '\0';
+    }
+
+    int sector = Find(filename);
+    if (sector == -1)return -1;
+    else if(i == strlen(name))return sector;
+
+    //检查file是否为目录文件
+    FileHeader* header = new FileHeader;
+    header->FetchFrom(sector);
+    if (header->GetFileType() != TYPE_DIR)
+    {
+        DEBUG(dbgFile, filename << "is not a directory");
+        return -1;
+    }
+    delete header;
+
+    //递归进入子目录中查找
+    OpenFile* subDirFile = new OpenFile(sector);
+    Directory* subDir = new Directory;
+    subDir->FetchFrom(subDirFile);
+    int res = subDir->FindWithFullPath(&name[i]);
+    
+    delete subDirFile;
+    delete subDir;
+    return res;
+    
 }
 
 //----------------------------------------------------------------------
@@ -138,7 +209,40 @@ Directory::Add(char *name, int newSector)
             table[i].sector = newSector;
         return TRUE;
 	}
-    return FALSE;	// no space.  Fix when we have extensible files.
+
+    DirectoryEntry* newtable = new DirectoryEntry[tableSize << 1];
+    for (int i = 0; i < tableSize; i++)
+    {
+        newtable[i].sector = table[i].sector;
+        strncpy(newtable[i].name, table[i].name, FileNameMaxLen);
+        newtable[i].inUse = TRUE;
+    }
+
+    newtable[tableSize].sector = newSector;
+    strncpy(newtable[tableSize].name, name, FileNameMaxLen);
+    newtable[tableSize].inUse = TRUE;
+    tableSize <<= 1;
+
+    delete table;
+    table = newtable;
+
+    return TRUE;	// no space.  Fix when we have extensible files.
+}
+
+bool
+Directory::AddWithFullPath(char* name,char* filepath, int newSector)
+{
+    int sector = FindWithFullPath(filepath);
+    if (sector == 1)return FALSE;
+
+    OpenFile* file = new OpenFile(sector);
+    Directory* dir = new Directory;
+    dir->FetchFrom(file);
+    bool res = dir->Add(name, newSector);
+    
+    delete file;
+    delete dir;
+    return res;
 }
 
 //----------------------------------------------------------------------
@@ -147,6 +251,7 @@ Directory::Add(char *name, int newSector)
 //	return FALSE if the file isn't in the directory. 
 //
 //	"name" -- the file name to be removed
+//TODO:当超过半数的entry没有用时压缩空间
 //----------------------------------------------------------------------
 
 bool
@@ -158,6 +263,22 @@ Directory::Remove(char *name)
 	return FALSE; 		// name not in directory
     table[i].inUse = FALSE;
     return TRUE;	
+}
+
+bool
+Directory::RemoveWithFullPath(char* name, char* filepath)
+{
+    int sector = FindWithFullPath(filepath);
+    if (sector == -1)return FALSE;
+    
+    OpenFile* file = new OpenFile(sector);
+    Directory* dir = new Directory;
+    dir->FetchFrom(file);
+    bool res = dir->Remove(name);
+
+    delete file;
+    delete dir;
+    return res;
 }
 
 //----------------------------------------------------------------------
@@ -183,14 +304,24 @@ void
 Directory::Print()
 { 
     FileHeader *hdr = new FileHeader;
-
+    string str[3] = {"File", "Dir", "Unknown"};
     printf("Directory contents:\n");
     for (int i = 0; i < tableSize; i++)
 	if (table[i].inUse) {
-	    printf("Name: %s, Sector: %d\n", table[i].name, table[i].sector);
+	    printf("Name: %s, Type : %s, Sector: %d\n", table[i].name,str[table[i].type],table[i].sector);
 	    hdr->FetchFrom(table[i].sector);
 	    hdr->Print();
 	}
     printf("\n");
     delete hdr;
 }
+
+//TODO:
+// bool
+// Directory::splitFileName(char* fullname, char* filename, char* dirname)
+// {
+//     int i = strlen(fullname);
+//     while (i > 0 && fullname[i] != '/')i--;
+    
+    
+// }

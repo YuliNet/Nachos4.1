@@ -19,6 +19,16 @@
 #include "time.h"
 
 typedef time_t TimeWrapper;
+typedef enum
+{
+	TYPE_FILE,
+	TYPE_DIR,
+	TYPE_UNKNOWN
+}FileType;
+
+#define FileNameMaxLen 		9	// for simplicity, we assume 
+					// file names are <= 9 characters long
+#define FilePathMaxLen     100
 
 // The following class defines the Nachos "file header" (in UNIX terms,  
 // the "i-node"), describing where on disk to find all of the data in the file.
@@ -60,11 +70,16 @@ class FileHeader {
     bool AllocateMemory(int numSectors);
 
     void SetSelfSector(int sector) {selfSector = sector;};
-    void setNumBytes(int n) {numBytes = n;};
+    void SetNumBytes(int n) {numBytes = n;};
+    void SetFileType(FileType type) {this->type = type;};
+    FileType GetFileType() {return this->type;};
+    
 
   private:
     int numBytes;			// Number of bytes in the file
     int numSectors;			// Number of data sectors in the file
+
+    FileType type;
 
     TimeWrapper createTime;
     TimeWrapper accessTime;
@@ -73,6 +88,9 @@ class FileHeader {
     int selfSector;
     int firstSector;
     int lastSector;
+
+    char name[FileNameMaxLen + 1];
+    char filepath[FilePathMaxLen + 1];
 };
 
 #endif // FILEHDR_H

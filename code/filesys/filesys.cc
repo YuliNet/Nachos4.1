@@ -62,7 +62,7 @@
 // supports extensible files, the directory size sets the maximum number 
 // of files that can be loaded onto the disk.
 #define FreeMapFileSize 	(NumSectors * sizeof(int))
-#define NumDirEntries 		10
+#define NumDirEntries 		10  //每个目录下最大文件数目个数
 #define DirectoryFileSize 	(sizeof(DirectoryEntry) * NumDirEntries)
 
 //----------------------------------------------------------------------
@@ -175,7 +175,7 @@ FileSystem::FileSystem(bool format)
 //----------------------------------------------------------------------
 
 bool
-FileSystem::Create(char *name, int initialSize)
+FileSystem::Create(char *name, int initialSize, FileType type = TYPE_FILE)
 {
     Directory *directory;
     PersistentIntmap *freeMap;
@@ -200,6 +200,7 @@ FileSystem::Create(char *name, int initialSize)
 	else {
     	    hdr = new FileHeader;
             hdr->SetSelfSector(sector);
+            hdr->SetFileType(type);
 	    if (!hdr->Allocate(freeMap, initialSize))
             	success = FALSE;	// no space on disk for data
 	    else {	
@@ -215,6 +216,12 @@ FileSystem::Create(char *name, int initialSize)
     }
     delete directory;
     return success;
+}
+
+bool
+FileSystem::CreateWithFullPath(char* name, int initialSize, FileType type)
+{
+    
 }
 
 //----------------------------------------------------------------------
@@ -322,7 +329,7 @@ FileSystem::Print()
     PersistentIntmap *freeMap = new PersistentIntmap(freeMapFile,NumSectors);
     Directory *directory = new Directory(NumDirEntries);
 
-    printf("Bit map file header:\n");
+    printf("Int map file header:\n");
     bitHdr->FetchFrom(FreeMapSector);
     bitHdr->Print();
 

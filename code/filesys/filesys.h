@@ -38,6 +38,7 @@
 #include "openfile.h"
 #include "directory.h"
 #include "pintmap.h"
+#include "filehdr.h"
 
 #ifdef FILESYS_STUB 		// Temporarily implement file system calls as 
 				// calls to UNIX, until the real file system
@@ -75,12 +76,14 @@ class FileSystem {
 					// the disk, so initialize the directory
     					// and the bitmap of free blocks.
 
-    bool Create(char *name, int initialSize);  	
+    bool Create(char *name, int initialSize,FileType type = TYPE_FILE);
 					// Create a file (UNIX creat)
+	bool CreateWithFullPath(char* name, int initialSize, FileType type);
 
     OpenFile* Open(char *name); 	// Open a file (UNIX open)
 
     bool Remove(char *name);  		// Delete a file (UNIX unlink)
+	bool RemoveWithFullPath(char* name);
 
     void List();			// List all the files in the file system
 
@@ -96,6 +99,7 @@ private:
 
     Directory* GetDirectory();
 	PersistentIntmap* GetFreeMap();
+	bool CheckDir(char* Dirname);
 };
 
 #endif // FILESYS

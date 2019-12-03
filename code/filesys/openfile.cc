@@ -156,7 +156,7 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
         int n = (position + numBytes - fileLength) / SectorSize + 1;    //需要增加的扇区个数
         if (!hdr->AllocateMemory(n))
             return 0;
-        hdr->setNumBytes(position + numBytes);
+        hdr->SetNumBytes(position + numBytes);
         hdr->WriteBack();
     }
     DEBUG(dbgFile, "Writing " << numBytes << " bytes at " << position << " from file of length " << fileLength);
