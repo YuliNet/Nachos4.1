@@ -209,7 +209,6 @@ Directory::Add(char *name, int newSector)
             table[i].sector = newSector;
         return TRUE;
 	}
-
     DirectoryEntry* newtable = new DirectoryEntry[tableSize << 1];
     for (int i = 0; i < tableSize; i++)
     {
@@ -307,9 +306,18 @@ Directory::Print()
     printf("Directory contents:\n");
     for (int i = 0; i < tableSize; i++)
 	if (table[i].inUse) {
-	    printf("Name: %s, Type : %d, Sector: %d\n", table[i].name,table[i].type,table[i].sector);
+	    printf("Name: %s, FileHeaderSector: %d\n", table[i].name,table[i].sector);
 	    hdr->FetchFrom(table[i].sector);
 	    hdr->Print();
+        if (hdr->GetFileType() == TYPE_DIR)
+        {
+            Directory* subdir = new Directory();
+            OpenFile* subdirfile = new OpenFile(table[i].sector);
+            subdir->FetchFrom(subdirfile);
+            subdir->Print();
+            delete subdir;
+            delete subdirfile;
+        }
 	}
     printf("\n");
     delete hdr;

@@ -41,8 +41,8 @@ FileHeader::FileHeader(char* filename, char* filepath, FileType type, int sector
     numSectors = 0;
     this->type = type;
     this->selfSector = sector;
-    strcpy(name, filename);
-    strcpy(this->filepath, filepath);
+    strncpy(name, filename, FileNameMaxLen);
+    strncpy(this->filepath, filepath, FilePathMaxLen);
 }
 
 
@@ -97,7 +97,7 @@ FileHeader::AllocateMemory(int numSectors)
         freeMap->Mark(lastSector, next);
         lastSector = next;
     }
-    numSectors += numSectors;
+    this->numSectors += numSectors;
     freeMap->WriteBack();
     delete freeMap;
     return TRUE;
@@ -124,7 +124,7 @@ FileHeader::Deallocate()
         freeMap->Clear(now);
         now = next;
     }
-
+    freeMap->WriteBack();
     delete freeMap;
 }
 
@@ -176,7 +176,6 @@ FileHeader::ByteToSector(int offset)
     for (int i = 0; i < n; i++)
     {
         sector = freeMap->Get(sector);
-
     }
     delete freeMap;
     return(sector);
@@ -202,5 +201,5 @@ FileHeader::FileLength()
 void
 FileHeader::Print()
 {
-    cout << "File name : " << name << "\tFirst Secotr : " << firstSector << "\tFile size : " << numBytes << "\tbytes " << "File path : " << filepath << endl;
+    cout << "File name:" << name << " First Secotr:" << firstSector << " File size:" << numBytes << " File path:" << filepath << endl;
 }

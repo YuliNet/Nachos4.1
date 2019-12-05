@@ -252,13 +252,19 @@ void
 Kernel::FileSysTest()
 {
     fileSystem->Create("test", 4096);
+    
     OpenFile* file = fileSystem->Open("test");
     char str[] = "hello, world"; 
     file->WriteAt(str, strlen(str), 0);
     file->ReadAt(str, strlen(str), 0);
     cout << str << endl;
+    fileSystem->Remove("test");
     
-    // fileSystem->Print();
-    
+
+    fileSystem->CreateDirectory("root", 1);
+
+    fileSystem->CreateWithFullPath("myfile","/root",0, TYPE_FILE);
+
+    fileSystem->Print();    
 }
 

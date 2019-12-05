@@ -77,13 +77,15 @@ class FileSystem {
     					// and the bitmap of free blocks.
 
     bool Create(char *name, int initialSize,FileType type = TYPE_FILE);
+	bool CreateDirectory(char* name, int numEntrys);
 					// Create a file (UNIX creat)
-	bool CreateWithFullPath(char* name, int initialSize, FileType type);
+	bool CreateWithFullPath(char* name, char* pathname, int initialSize, FileType type);
 
     OpenFile* Open(char *name); 	// Open a file (UNIX open)
+	OpenFile* OpenWithFullPath(char* name, char* pathname);
 
     bool Remove(char *name);  		// Delete a file (UNIX unlink)
-	bool RemoveWithFullPath(char* name);
+	bool RemoveWithFullPath(char* name, char* pathname);
 
     void List();			// List all the files in the file system
 

@@ -132,8 +132,10 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
     // read in all the full and partial sectors that we need
     buf = new char[numSectors * SectorSize];
     for (i = firstSector; i <= lastSector; i++)	
+    {
         kernel->synchDisk->ReadSector(hdr->ByteToSector(i * SectorSize), 
 					&buf[(i - firstSector) * SectorSize]);
+    }
 
     // copy the part we want
     bcopy(&buf[position - (firstSector * SectorSize)], into, numBytes);
@@ -141,6 +143,7 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
     return numBytes;
 }
 
+//TODO:numBytes和numSectors
 int
 OpenFile::WriteAt(char *from, int numBytes, int position)
 {
@@ -156,6 +159,7 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
         int n = (position + numBytes - fileLength) / SectorSize + 1;    //需要增加的扇区个数
         if (!hdr->AllocateMemory(n))
             return 0;
+        // DEBUG(dbgFile, "filelength :" << position + numBytes);
         hdr->SetNumBytes(position + numBytes);
         hdr->WriteBack();
     }
