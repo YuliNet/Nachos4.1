@@ -8,7 +8,15 @@
 
 #include "copyright.h"
 #include "pintmap.h"
+#include "utility.h"
+#include "disk.h"
+#include "main.h"
+#include "synchdisk.h"
+#include "debug.h"
 
+#define FreeMapHeaderSector 	0
+#define DirectoryHeaderSector 	1
+#define FreeMapFileFirstSector  2
 //----------------------------------------------------------------------
 // PersistentIntmap::PersistentIntmap(int)
 // 	Initialize a bitmap with "numItems" bits, so that every bit is clear.
@@ -19,28 +27,25 @@
 //      This constructor does not initialize the bitmap from a disk file
 //----------------------------------------------------------------------
 
-PersistentIntmap::PersistentIntmap(int numItems):IntMap(numItems) 
-{ 
+PersistentIntmap::PersistentIntmap():IntMap(NumSectors)
+{
 }
 
-//----------------------------------------------------------------------
-// PersistentIntmap::PersistentIntmap(OpenFile*,int)
-// 	Initialize a persistent bitmap with "numItems" bits,
-//      so that every bit is clear.
-//
-//	"numItems" is the number of bits in the bitmap.
-//      "file" refers to an open file containing the bitmap (written
-//        by a previous call to PersistentIntmap::WriteBack
-//
-//      This constructor initializes the bitmap from a disk file
-//----------------------------------------------------------------------
+void
+PersistentIntmap::Init()
+{
+    Mark(FreeMapHeaderSector, -1);
+    Mark(DirectoryHeaderSector, -1);
 
-PersistentIntmap::PersistentIntmap(OpenFile *file, int numItems):IntMap(numItems) 
-{ 
-    // map has already been initialized by the BitMap constructor,
-    // but we will just overwrite that with the contents of the
-    // map found in the file
-    file->ReadAt((char *)map, numItems * sizeof(int), 0);
+    int numSectors = divRoundUp(NumSectors * sizeof(int), SectorSize);
+    int t = FreeMapFileFirstSector;
+    for (int i = 0; i < numSectors; i++)
+    {
+        Mark(t, t+1);
+        t++;
+    }
+    Mark(t - 1, -1);
+    WriteBack();
 }
 
 //----------------------------------------------------------------------
@@ -55,25 +60,50 @@ PersistentIntmap::~PersistentIntmap()
 //----------------------------------------------------------------------
 // PersistentIntmap::FetchFrom
 // 	Initialize the contents of a persistent bitmap from a Nachos file.
-//
-//	"file" is the place to read the bitmap from
 //----------------------------------------------------------------------
-
 void
-PersistentIntmap::FetchFrom(OpenFile *file) 
+PersistentIntmap::FetchFrom() 
 {
-    file->ReadAt((char *)map, numItems * sizeof(int), 0);
+    int numSectors;
+    char *buf;
+
+    numSectors = divRoundUp(NumSectors * sizeof(int), SectorSize);
+    buf = new char[numSectors * SectorSize];
+
+    int sector = FreeMapFileFirstSector;
+    for (int i = 0; i < numSectors; i++)
+    {
+        kernel->synchDisk->ReadSector(sector, &buf[i * SectorSize]);
+        sector++;
+    }
+    
+    bcopy(buf, map, numSectors * SectorSize);
+    delete buf;
 }
 
 //----------------------------------------------------------------------
 // PersistentIntmap::WriteBack
 // 	Store the contents of a persistent bitmap to a Nachos file.
-//
-//	"file" is the place to write the bitmap to
+//普通文件通过打开文件的writeAt实现写回磁盘，在WtiteAt中需要根据intMap得到写入的物理磁盘号
+//但是intMap写回磁盘有个自举问题，自己还没写回磁盘，但是writeAt又要从磁盘中读intMap
+//所以intMap的写回操作需要特殊处理
 //----------------------------------------------------------------------
-
 void
-PersistentIntmap::WriteBack(OpenFile *file)
+PersistentIntmap::WriteBack()
 {
-   file->WriteAt((char *)map, numItems * sizeof(int), 0);
+    int numSectors;
+    char *buf;
+
+    numSectors = divRoundUp(NumSectors * sizeof(int), SectorSize);
+    buf = new char[numSectors * SectorSize];
+    
+    bcopy(map, buf, numSectors * SectorSize);
+
+    int sector = FreeMapFileFirstSector;
+    for (int i = 0; i < numSectors; i++)
+    {
+        kernel->synchDisk->WriteSector(sector, &buf[i * SectorSize]);
+        sector++;
+    }
+    delete buf;
 }

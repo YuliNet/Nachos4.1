@@ -54,19 +54,10 @@ Alarm::Alarm(bool doRandom)
 void 
 Alarm::CallBack() 
 {
-    // Interrupt *interrupt = kernel->interrupt;
-    // Scheduler *scheduler = kernel->scheduler;
-    // Thread *current = kernel->currentThread;
-    // Thread *front = scheduler->FindNextToRun();
-    // MachineStatus status = interrupt->getStatus();
+    Interrupt *interrupt = kernel->interrupt;
+    MachineStatus status = interrupt->getStatus();
     
-    // if (status != IdleMode) {
-    //     DEBUG(dbgThread,"*****CallBack*****");
-    //     interrupt->DumpState();
-    //     if (front->getPriority() < current->getPriority())
-    //     {
-    //         interrupt->YieldOnReturn();
-    //     }
-        
-    // }
+    if (status != IdleMode) {
+	interrupt->YieldOnReturn();
+    }
 }

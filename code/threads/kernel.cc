@@ -248,3 +248,17 @@ Kernel::NetworkTest() {
     // Then we're done!
 }
 
+void
+Kernel::FileSysTest()
+{
+    fileSystem->Create("test", 4096);
+    OpenFile* file = fileSystem->Open("test");
+    char str[] = "hello, world"; 
+    file->WriteAt(str, strlen(str), 0);
+    file->ReadAt(str, strlen(str), 0);
+    cout << str << endl;
+    
+    // fileSystem->Print();
+    
+}
+

@@ -30,13 +30,13 @@
 
 class PersistentIntmap : public IntMap {
   public:
-    PersistentIntmap(OpenFile *file,int numItems); //initialize bitmap from disk 
-    PersistentIntmap(int numItems); // or don't...
+    PersistentIntmap();
 
     ~PersistentIntmap(); 			// deallocate bitmap
 
-    void FetchFrom(OpenFile *file);     // read bitmap from the disk
-    void WriteBack(OpenFile *file); 	// write bitmap contents to disk 
+    void Init();
+    void FetchFrom();
+    void WriteBack();
 };
 
 #endif // PBITMAP_H

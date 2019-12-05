@@ -175,15 +175,15 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
         ReadAt(buf, SectorSize, firstSector * SectorSize);	
     if (!lastAligned && ((firstSector != lastSector) || firstAligned))
         ReadAt(&buf[(lastSector - firstSector) * SectorSize], 
-				SectorSize, lastSector * SectorSize);	
-
+				SectorSize, lastSector * SectorSize);
 // copy in the bytes we want to change 
     bcopy(from, &buf[position - (firstSector * SectorSize)], numBytes);
 
 // write modified sectors back
-    for (i = firstSector; i <= lastSector; i++)	
-        kernel->synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-					&buf[(i - firstSector) * SectorSize]);
+    for (i = firstSector; i <= lastSector; i++)
+    {
+        kernel->synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), &buf[(i - firstSector) * SectorSize]);
+    }
     delete [] buf;
     return numBytes;
 }

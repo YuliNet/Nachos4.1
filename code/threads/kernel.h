@@ -49,6 +49,8 @@ class Kernel {
     void ConsoleTest();         // interactive console self test
 
     void NetworkTest();         // interactive 2-machine network test
+
+    void FileSysTest();
     
 // These are public for notational convenience; really, 
 // they're global variables used everywhere.

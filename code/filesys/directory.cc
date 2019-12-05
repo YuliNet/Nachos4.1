@@ -76,7 +76,7 @@ Directory::FetchFrom(OpenFile* file)
 {
     (void) file->ReadAt((char*)&tableSize, sizeof(int), 0);
     table = new DirectoryEntry[tableSize];
-    (void) file->ReadAt((char*)&table, tableSize * sizeof(DirectoryEntry), sizeof(int));
+    (void) file->ReadAt((char*)table, tableSize * sizeof(DirectoryEntry), sizeof(int));
 }
 
 //----------------------------------------------------------------------
@@ -289,9 +289,9 @@ Directory::RemoveWithFullPath(char* name, char* filepath)
 void
 Directory::List()
 {
-   for (int i = 0; i < tableSize; i++)
-	if (table[i].inUse)
-	    printf("%s\n", table[i].name);
+    for (int i = 0; i < tableSize; i++)
+	    if (table[i].inUse)
+	        printf("%s\n", table[i].name);
 }
 
 //----------------------------------------------------------------------
@@ -304,11 +304,10 @@ void
 Directory::Print()
 { 
     FileHeader *hdr = new FileHeader;
-    string str[3] = {"File", "Dir", "Unknown"};
     printf("Directory contents:\n");
     for (int i = 0; i < tableSize; i++)
 	if (table[i].inUse) {
-	    printf("Name: %s, Type : %s, Sector: %d\n", table[i].name,str[table[i].type],table[i].sector);
+	    printf("Name: %s, Type : %d, Sector: %d\n", table[i].name,table[i].type,table[i].sector);
 	    hdr->FetchFrom(table[i].sector);
 	    hdr->Print();
 	}

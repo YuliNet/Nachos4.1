@@ -44,7 +44,11 @@ bool
 IntMap::Test(int which) const
 {
     ASSERT(which >= 0 && which < numItems);
-    return map[which];
+    if (map[which] != 0)
+    {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 int
@@ -93,7 +97,7 @@ IntMap::Print() const
     cout << "Intmap set:\n"; 
     for (int i = 0; i < numItems; i++) {
 	if (Test(i)) {
-	    cout << i << ", ";
+	    cout << i << " : " << map[i] << endl;
 	}
     }
     cout << "\n"; 
@@ -102,5 +106,6 @@ IntMap::Print() const
 int
 IntMap::Get(int which) const
 {
+    ASSERT(which < numItems);
     return map[which];
 }

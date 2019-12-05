@@ -181,6 +181,7 @@ int main(int argc, char **argv)
     bool threadTestFlag = false;
     bool consoleTestFlag = false;
     bool networkTestFlag = false;
+    bool filesysTestFlag = false;
 #ifndef FILESYS_STUB
     char *copyUnixFileName = NULL;   // UNIX file to be copied into Nachos
     char *copyNachosFileName = NULL; // name of copied file in Nachos
@@ -222,6 +223,10 @@ int main(int argc, char **argv)
         else if (strcmp(argv[i], "-N") == 0)
         {
             networkTestFlag = TRUE;
+        }
+        else if (strcmp(argv[i], "-F") == 0)
+        {
+            filesysTestFlag = TRUE;
         }
 #ifndef FILESYS_STUB
         else if (strcmp(argv[i], "-cp") == 0)
@@ -293,6 +298,10 @@ int main(int argc, char **argv)
     if (networkTestFlag)
     {
         kernel->NetworkTest(); // two-machine test of the network
+    }
+    if (filesysTestFlag)
+    {
+        kernel->FileSysTest();
     }
 
 #ifndef FILESYS_STUB

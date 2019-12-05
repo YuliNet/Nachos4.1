@@ -28,6 +28,23 @@
 #include "debug.h"
 #include "synchdisk.h"
 #include "main.h"
+#include "pintmap.h"
+
+FileHeader::FileHeader()
+{
+
+}
+
+FileHeader::FileHeader(char* filename, char* filepath, FileType type, int sector)
+{
+    numBytes = 0;
+    numSectors = 0;
+    this->type = type;
+    this->selfSector = sector;
+    strcpy(name, filename);
+    strcpy(this->filepath, filepath);
+}
+
 
 //----------------------------------------------------------------------
 // FileHeader::Allocate
@@ -41,12 +58,15 @@
 //----------------------------------------------------------------------
 
 bool
-FileHeader::Allocate(PersistentIntmap *freeMap, int fileSize)
+FileHeader::Allocate(int fileSize)
 { 
+    PersistentIntmap* freeMap = new PersistentIntmap();
+    freeMap->FetchFrom();
+
     numBytes = fileSize;
     numSectors  = divRoundUp(fileSize, SectorSize);
     if (freeMap->NumClear() < numSectors)
-	return FALSE;		// not enough space
+	    return FALSE;		// not enough space
 
     firstSector = freeMap->FindAndSet();
     int pre = firstSector;
@@ -57,24 +77,30 @@ FileHeader::Allocate(PersistentIntmap *freeMap, int fileSize)
         pre= now;
     }
     lastSector = pre;
+    freeMap->WriteBack();
+    delete freeMap;
     return TRUE;
 }
 
 bool
-FileHeader::AllocateMemory(int n)
+FileHeader::AllocateMemory(int numSectors)
 {
-    PersistentIntmap *freeMap = kernel->fileSystem->GetFreeMap();
+    PersistentIntmap *freeMap = new PersistentIntmap();
+    freeMap->FetchFrom();
 
-    if (freeMap->NumClear() < n)
+    if (freeMap->NumClear() < numSectors)
         return FALSE;
     
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < numSectors; i++)
     {
         int next = freeMap->FindAndSet();
         freeMap->Mark(lastSector, next);
         lastSector = next;
     }
-    numSectors += n;
+    numSectors += numSectors;
+    freeMap->WriteBack();
+    delete freeMap;
+    return TRUE;
 }
 
 //----------------------------------------------------------------------
@@ -85,8 +111,11 @@ FileHeader::AllocateMemory(int n)
 //----------------------------------------------------------------------
 
 void 
-FileHeader::Deallocate(PersistentIntmap *freeMap)
+FileHeader::Deallocate()
 {
+    PersistentIntmap* freeMap = new PersistentIntmap();
+    freeMap->FetchFrom();
+    
     int now = firstSector;
     for (int i = 0; i < numSectors; i++)
     {
@@ -95,6 +124,8 @@ FileHeader::Deallocate(PersistentIntmap *freeMap)
         freeMap->Clear(now);
         now = next;
     }
+
+    delete freeMap;
 }
 
 //----------------------------------------------------------------------
@@ -119,15 +150,9 @@ FileHeader::FetchFrom(int sector)
 //----------------------------------------------------------------------
 
 void
-FileHeader::WriteBack(int sector)
-{
-    kernel->synchDisk->WriteSector(sector, (char *)this); 
-}
-
-void
 FileHeader::WriteBack()
 {
-    WriteBack(selfSector);
+    kernel->synchDisk->WriteSector(selfSector, (char *)this);
 }
 
 //----------------------------------------------------------------------
@@ -143,7 +168,9 @@ FileHeader::WriteBack()
 int
 FileHeader::ByteToSector(int offset)
 {
-    PersistentIntmap *freeMap = kernel->fileSystem->GetFreeMap();
+    PersistentIntmap* freeMap = new PersistentIntmap();
+    freeMap->FetchFrom();
+
     int n = offset / SectorSize;
     int sector = firstSector;
     for (int i = 0; i < n; i++)
@@ -175,5 +202,5 @@ FileHeader::FileLength()
 void
 FileHeader::Print()
 {
-    cout << "File Header contents. File name : " << name << " File size : " << numBytes << " bytes " << "File path : " << filepath << endl;
+    cout << "File name : " << name << "\tFirst Secotr : " << firstSector << "\tFile size : " << numBytes << "\tbytes " << "File path : " << filepath << endl;
 }

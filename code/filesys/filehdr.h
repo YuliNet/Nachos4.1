@@ -47,15 +47,17 @@ typedef enum
 
 class FileHeader {
   public:
-    bool Allocate(PersistentIntmap *intMap, int fileSize);// Initialize a file header, 
+    FileHeader(char* name, char* filepath, FileType type, int sector);
+    FileHeader();
+
+    bool Allocate(int fileSize);// Initialize a file header, 
 						//  including allocating space 
 						//  on disk for the file data
-    void Deallocate(PersistentIntmap *intMap);  // De-allocate this file's 
+    bool AllocateMemory(int numSectors);
+    void Deallocate();  // De-allocate this file's 
 						//  data blocks
 
     void FetchFrom(int sectorNumber); 	// Initialize file header from disk
-    void WriteBack(int sectorNumber); 	// Write modifications to file header
-					//  back to disk
     void WriteBack();
 
     int ByteToSector(int offset);	// Convert a byte offset into the file
@@ -67,12 +69,12 @@ class FileHeader {
 
     void Print();			// Print the contents of the file.
 
-    bool AllocateMemory(int numSectors);
 
     void SetSelfSector(int sector) {selfSector = sector;};
     void SetNumBytes(int n) {numBytes = n;};
     void SetFileType(FileType type) {this->type = type;};
     FileType GetFileType() {return this->type;};
+    int GetFirstSector() {return firstSector;};
     
 
   private:
