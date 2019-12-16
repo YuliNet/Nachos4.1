@@ -28,7 +28,7 @@ typedef enum
 
 #define FileNameMaxLen 		9	// for simplicity, we assume 
 					// file names are <= 9 characters long
-#define FilePathMaxLen     100
+#define FilePathMaxLen     50
 
 // The following class defines the Nachos "file header" (in UNIX terms,  
 // the "i-node"), describing where on disk to find all of the data in the file.
@@ -50,10 +50,7 @@ class FileHeader {
     FileHeader(char* name, char* filepath, FileType type, int sector);
     FileHeader();
 
-    bool Allocate(int fileSize);// Initialize a file header, 
-						//  including allocating space 
-						//  on disk for the file data
-    bool AllocateMemory(int numSectors);
+    bool Allocate(int fileSize);
     void Deallocate();  // De-allocate this file's 
 						//  data blocks
 
@@ -64,21 +61,20 @@ class FileHeader {
 					// to the disk sector containing
 					// the byte
 
-    int FileLength();			// Return the length of the file 
-					// in bytes
+    int FileLimit();
+    int FileCapacity();
 
     void Print();			// Print the contents of the file.
 
 
-    void SetSelfSector(int sector) {selfSector = sector;};
-    void SetNumBytes(int n) {numBytes = n;};
-    void SetFileType(FileType type) {this->type = type;};
+    int GetSelfSector() {return selfSector;};
     FileType GetFileType() {return this->type;};
     int GetFirstSector() {return firstSector;};
     
 
   private:
-    int numBytes;			// Number of bytes in the file
+    int limit;			// 文件内容
+    int capacity;   // 文件容量
     int numSectors;			// Number of data sectors in the file
 
     FileType type;

@@ -32,15 +32,17 @@
 
 FileHeader::FileHeader()
 {
-
 }
 
 FileHeader::FileHeader(char* filename, char* filepath, FileType type, int sector)
 {
-    numBytes = 0;
+    capacity = 0;
     numSectors = 0;
+    limit = 0;
+    firstSector = -1;
+    lastSector = -1;
     this->type = type;
-    this->selfSector = sector;
+    selfSector = sector;
     strncpy(name, filename, FileNameMaxLen);
     strncpy(this->filepath, filepath, FilePathMaxLen);
 }
@@ -48,56 +50,37 @@ FileHeader::FileHeader(char* filename, char* filepath, FileType type, int sector
 
 //----------------------------------------------------------------------
 // FileHeader::Allocate
-// 	Initialize a fresh file header for a newly created file.
-//	Allocate data blocks for the file out of the map of free disk blocks.
-//	Return FALSE if there are not enough free blocks to accomodate
-//	the new file.
-//
-//	"freeMap" is the bit map of free disk sectors
-//	"fileSize" is the bit map of free disk sectors
+// 	升级版，申请fileSize个字节，既可以在初始化文件时使用，也可以在文件容量不够时扩充文件容量
 //----------------------------------------------------------------------
 
 bool
 FileHeader::Allocate(int fileSize)
-{ 
+{
+    if (fileSize == 0)return TRUE;
     PersistentIntmap* freeMap = new PersistentIntmap();
     freeMap->FetchFrom();
 
-    numBytes = fileSize;
-    numSectors  = divRoundUp(fileSize, SectorSize);
-    if (freeMap->NumClear() < numSectors)
+    int n  = divRoundUp(fileSize, SectorSize);
+    if (freeMap->NumClear() < n)
 	    return FALSE;		// not enough space
 
-    firstSector = freeMap->FindAndSet();
-    int pre = firstSector;
-    for (int i = 1; i < numSectors; i++)
+    if (firstSector == -1)
     {
-        int now = freeMap->FindAndSet();
-        freeMap->Mark(pre, now);
-        pre= now;
+        firstSector = freeMap->FindAndSet();
+        lastSector = firstSector;
+        numSectors = 1;
+        n--;
     }
-    lastSector = pre;
-    freeMap->WriteBack();
-    delete freeMap;
-    return TRUE;
-}
-
-bool
-FileHeader::AllocateMemory(int numSectors)
-{
-    PersistentIntmap *freeMap = new PersistentIntmap();
-    freeMap->FetchFrom();
-
-    if (freeMap->NumClear() < numSectors)
-        return FALSE;
     
-    for (int i = 0; i < numSectors; i++)
+    for (int i = 0; i < n; i++)
     {
         int next = freeMap->FindAndSet();
         freeMap->Mark(lastSector, next);
         lastSector = next;
     }
-    this->numSectors += numSectors;
+
+    numSectors += n; 
+    capacity += fileSize;
     freeMap->WriteBack();
     delete freeMap;
     return TRUE;
@@ -182,14 +165,20 @@ FileHeader::ByteToSector(int offset)
 }
 
 //----------------------------------------------------------------------
-// FileHeader::FileLength
+// FileHeader::FileLimit
 // 	Return the number of bytes in the file.
 //----------------------------------------------------------------------
 
 int
-FileHeader::FileLength()
+FileHeader::FileLimit()
 {
-    return numBytes;
+    return limit;
+}
+
+int
+FileHeader::FileCapacity()
+{
+    return capacity;
 }
 
 //----------------------------------------------------------------------
@@ -201,5 +190,5 @@ FileHeader::FileLength()
 void
 FileHeader::Print()
 {
-    cout << "File name:" << name << " First Secotr:" << firstSector << " File size:" << numBytes << " File path:" << filepath << endl;
+    cout << "File name:" << name << " First Secotr:" << firstSector << " File size:" << limit << " File path:" << filepath << endl;
 }

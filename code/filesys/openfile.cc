@@ -31,6 +31,7 @@ OpenFile::OpenFile(int sector)
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
     seekPosition = 0;
+    // kernel->synchDisk->PlusVisitors(sector);
 }
 
 //----------------------------------------------------------------------
@@ -40,6 +41,7 @@ OpenFile::OpenFile(int sector)
 
 OpenFile::~OpenFile()
 {
+    // kernel->synchDisk->MinusVisitors(hdr->GetSelfSector());
     delete hdr;
 }
 
@@ -73,17 +75,21 @@ OpenFile::Seek(int position)
 int
 OpenFile::Read(char *into, int numBytes)
 {
-   int result = ReadAt(into, numBytes, seekPosition);
-   seekPosition += result;
-   return result;
+    // kernel->synchDisk->PlusReader(hdr->GetSelfSector());
+    int result = ReadAt(into, numBytes, seekPosition);
+    seekPosition += result;
+    // kernel->synchDisk->MinusReader(hdr->GetSelfSector());
+    return result;
 }
 
 int
 OpenFile::Write(char *into, int numBytes)
 {
-   int result = WriteAt(into, numBytes, seekPosition);
-   seekPosition += result;
-   return result;
+    // kernel->synchDisk->BeginWrite(hdr->GetSelfSector());
+    int result = WriteAt(into, numBytes, seekPosition);
+    seekPosition += result;
+    // kernel->synchDisk->EndWrite(hdr->GetSelfSector());
+    return result;
 }
 
 //----------------------------------------------------------------------
@@ -115,7 +121,7 @@ OpenFile::Write(char *into, int numBytes)
 int
 OpenFile::ReadAt(char *into, int numBytes, int position)
 {
-    int fileLength = hdr->FileLength();
+    int fileLength = hdr->FileLimit();
     int i, firstSector, lastSector, numSectors;
     char *buf;
 
@@ -143,27 +149,25 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
     return numBytes;
 }
 
-//TODO:numBytes和numSectors
 int
 OpenFile::WriteAt(char *from, int numBytes, int position)
 {
-    int fileLength = hdr->FileLength();
+    int fileLimit = hdr->FileLimit();
+    int fileCapacity = hdr->FileCapacity();
     int i, firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
 
-    if ((numBytes <= 0) || (position >= fileLength))
+    if ((numBytes <= 0) || (position >= fileLimit))
 	return 0;				// check request
-    if ((position + numBytes) > fileLength)
+    if ((position + numBytes) > fileCapacity)
 	{
-        int n = (position + numBytes - fileLength) / SectorSize + 1;    //需要增加的扇区个数
-        if (!hdr->AllocateMemory(n))
+        int n = (position + numBytes - fileCapacity);    //需要增加的字节数
+        if (!hdr->Allocate(n))
             return 0;
-        // DEBUG(dbgFile, "filelength :" << position + numBytes);
-        hdr->SetNumBytes(position + numBytes);
         hdr->WriteBack();
     }
-    DEBUG(dbgFile, "Writing " << numBytes << " bytes at " << position << " from file of length " << fileLength);
+    DEBUG(dbgFile, "Writing " << numBytes << " bytes at " << position << " from file of length " << fileLimit);
 
     firstSector = divRoundDown(position, SectorSize);
     lastSector = divRoundDown(position + numBytes - 1, SectorSize);
@@ -200,7 +204,7 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
 int
 OpenFile::Length() 
 { 
-    return hdr->FileLength(); 
+    return hdr->FileLimit(); 
 }
 
 #endif //FILESYS_STUB

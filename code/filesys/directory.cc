@@ -232,7 +232,7 @@ bool
 Directory::AddWithFullPath(char* name,char* filepath, int newSector)
 {
     int sector = FindWithFullPath(filepath);
-    if (sector == 1)return FALSE;
+    if (sector != -1)return FALSE;
 
     OpenFile* file = new OpenFile(sector);
     Directory* dir = new Directory;
@@ -322,13 +322,3 @@ Directory::Print()
     printf("\n");
     delete hdr;
 }
-
-//TODO:
-// bool
-// Directory::splitFileName(char* fullname, char* filename, char* dirname)
-// {
-//     int i = strlen(fullname);
-//     while (i > 0 && fullname[i] != '/')i--;
-    
-    
-// }

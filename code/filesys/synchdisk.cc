@@ -30,6 +30,13 @@ SynchDisk::SynchDisk()
     semaphore = new Semaphore("synch disk", 0);
     lock = new Lock("synch disk lock");
     disk = new Disk(this);
+
+    // for (int i = 0; i < NumSectors; i++)
+    // {
+    //     mutex[i] = new Semaphore("sector semaphore", 0);
+    //     numVisitors[i] = 0;
+    // }
+    // readerLock = new Lock("reader Lock");
 }
 
 //----------------------------------------------------------------------
@@ -43,6 +50,8 @@ SynchDisk::~SynchDisk()
     delete disk;
     delete lock;
     delete semaphore;
+    // delete[] mutex;
+    // delete readerLock;
 }
 
 //----------------------------------------------------------------------
@@ -92,3 +101,53 @@ SynchDisk::CallBack()
 { 
     semaphore->V();
 }
+
+// void
+// SynchDisk::PlusReader(int sector)
+// {
+//     readerLock->Acquire();
+//     numReaders[sector]++;
+//     if (numReaders[sector] == 1) //第一个读者加锁
+//         mutex[sector]->P();
+//     readerLock->Release();
+// }
+
+// void
+// SynchDisk::MinusReader(int sector)
+// {
+//     readerLock->Acquire();
+//     numReaders[sector]--;
+//     if (numReaders[sector] == 0)
+//         mutex[sector]->V(); //最后一个读者释放锁
+//     readerLock->Release();
+// }
+
+// void
+// SynchDisk::BeginWrite(int sector)
+// {
+//     mutex[sector]->P();
+// }
+
+// void
+// SynchDisk::EndWrite(int sector)
+// {
+//     mutex[sector]->V();
+// }
+
+// int
+// SynchDisk::GetVisitors(int sector)
+// {
+//     return numVisitors[sector];
+// }
+
+// void
+// SynchDisk::PlusVisitors(int sector)
+// {
+//     numVisitors[sector]++;
+// }
+
+// void
+// SynchDisk::MinusVisitors(int sector)
+// {
+//     numVisitors[sector]--;
+// }

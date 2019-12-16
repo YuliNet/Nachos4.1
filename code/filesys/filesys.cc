@@ -51,6 +51,8 @@
 #include "directory.h"
 #include "filehdr.h"
 #include "filesys.h"
+#include "main.h"
+#include "synchdisk.h"
 
 // Sectors containing the file headers for the bitmap of free sectors,
 // and the directory of files.  These file headers are placed in well-known
@@ -84,7 +86,6 @@ FileSystem::FileSystem(bool format)
     if (format)
     {
         PersistentIntmap *freeMap = new PersistentIntmap();
-        freeMap->Init();
         Directory *directory = new Directory(NumDirEntries);
         FileHeader *mapHdr = new FileHeader("mapHeader", "", TYPE_FILE, FreeMapHeaderSector);
         FileHeader *dirHdr = new FileHeader("dirHeader", "", TYPE_DIR, DirectoryHeaderSector);
@@ -93,13 +94,14 @@ FileSystem::FileSystem(bool format)
 
         // First, allocate space for FileHeaders for the directory and bitmap
         // (make sure no one else grabs these!)
-        // freeMap->Mark(FreeMapHeaderSector);
-        // freeMap->Mark(DirectoryHeaderSector);
+        freeMap->Mark(FreeMapHeaderSector, -1);
+        freeMap->Mark(DirectoryHeaderSector, -1);
+        freeMap->WriteBack();
 
         // Second, allocate space for the data blocks containing the contents
         // of the directory and bitmap files.  There better be enough space!
 
-        // ASSERT(mapHdr->Allocate(freeMap, FreeMapFileSize));
+        ASSERT(mapHdr->Allocate(FreeMapFileSize));
         ASSERT(dirHdr->Allocate(DirectoryFileSize));
         // Flush the bitmap and directory FileHeaders back to disk
         // We need to do this before we can "Open" the file, since open
@@ -113,7 +115,7 @@ FileSystem::FileSystem(bool format)
         // OK to open the bitmap and directory files now
         // The file system operations assume these two files are left open
         // while Nachos is running.
-
+        DEBUG(dbgFile, "Opening intmap and directory files.");
         freeMapFile = new OpenFile(FreeMapHeaderSector);
         directoryFile = new OpenFile(DirectoryHeaderSector);
         // Once we have the files "open", we can write the initial version
@@ -122,7 +124,7 @@ FileSystem::FileSystem(bool format)
         // sectors on the disk have been allocated for the file headers and
         // to hold the file data for the directory and bitmap.
 
-        DEBUG(dbgFile, "Writing intmap and directory back to disk.");
+        DEBUG(dbgFile, "Writing directory back to disk.");
         // freeMap->WriteBack();	 // flush changes to disk
         directory->WriteBack(directoryFile);
 
@@ -195,7 +197,7 @@ bool FileSystem::Create(char *name, int initialSize, FileType type = TYPE_FILE)
         freeMap = new PersistentIntmap();
         freeMap->FetchFrom();
         sector = freeMap->FindAndSet(); // find a sector to hold the file header
-        freeMap->WriteBack();
+        
         if (sector == -1)
             success = FALSE; // no free block for file header
         else if (!directory->Add(name, sector))
@@ -210,6 +212,7 @@ bool FileSystem::Create(char *name, int initialSize, FileType type = TYPE_FILE)
                 success = TRUE;
                 // everthing worked, flush all changes back to disk
                 hdr->WriteBack();
+                freeMap->WriteBack();
                 directory->WriteBack(directoryFile);
             }
             delete hdr;
@@ -234,7 +237,6 @@ bool FileSystem::CreateWithFullPath(char *name,char* pathname, int initialSize, 
     directory->FetchFrom(directoryFile);
 
     int dirSector = directory->FindWithFullPath(pathname);
-    // DEBUG(dbgFile, "--------------" << dirSector);
     OpenFile* dirfile = new OpenFile(dirSector);
     Directory* dir = new Directory();
     dir->FetchFrom(dirfile);
@@ -321,8 +323,6 @@ FileSystem::CreateDirectory(char* name, int numEntrys)
 
                 hdr->WriteBack();
                 directory->WriteBack(directoryFile);
-
-
             }
             delete hdr;
         }
@@ -403,6 +403,10 @@ bool FileSystem::Remove(char *name)
         delete directory;
         return FALSE; // file not found
     }
+    // if (kernel->synchDisk->GetVisitors(sector))
+    // {
+    //     return FALSE;
+    // }
     fileHdr = new FileHeader;
     fileHdr->FetchFrom(sector);
 

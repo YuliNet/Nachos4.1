@@ -37,9 +37,9 @@ PersistentIntmap::Init()
     Mark(FreeMapHeaderSector, -1);
     Mark(DirectoryHeaderSector, -1);
 
-    int numSectors = divRoundUp(NumSectors * sizeof(int), SectorSize);
+    int n = divRoundUp(NumSectors * sizeof(int), SectorSize);
     int t = FreeMapFileFirstSector;
-    for (int i = 0; i < numSectors; i++)
+    for (int i = 0; i < n; i++)
     {
         Mark(t, t+1);
         t++;

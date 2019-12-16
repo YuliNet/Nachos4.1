@@ -39,6 +39,15 @@ class SynchDisk : public CallBackObj {
     					// Disk::ReadRequest/WriteRequest and
 					// then wait until the request is done.
     void WriteSector(int sectorNumber, char* data);
+
+    void PlusReader(int sector);
+    void MinusReader(int sector);
+    void BeginWrite(int sector);
+    void EndWrite(int sector);
+
+    void PlusVisitors(int sector);
+    void MinusVisitors(int sector);
+    int GetVisitors(int sector);
     
     void CallBack();			// Called by the disk device interrupt
 					// handler, to signal that the
@@ -50,6 +59,11 @@ class SynchDisk : public CallBackObj {
 					// with the interrupt handler
     Lock *lock;		  		// Only one read/write request
 					// can be sent to the disk at a time
+    // Semaphore *mutex[NumSectors];
+    // int numReaders[NumSectors];
+    // Lock *readerLock;
+    
+    // int numVisitors[NumSectors]; 
 };
 
 #endif // SYNCHDISK_H

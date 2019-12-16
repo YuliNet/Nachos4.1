@@ -97,7 +97,7 @@ IntMap::Print() const
     cout << "Intmap set:\n"; 
     for (int i = 0; i < numItems; i++) {
 	if (Test(i)) {
-	    cout << i << " : " << map[i] << endl;
+	    cout << i << ":" << map[i] << " ";
 	}
     }
     cout << "\n"; 
