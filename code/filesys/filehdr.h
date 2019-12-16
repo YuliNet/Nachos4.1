@@ -17,8 +17,17 @@
 #include "disk.h"
 #include "pbitmap.h"
 
-#define NumDirect 	((SectorSize - 2 * sizeof(int)) / sizeof(int))
-#define MaxFileSize 	(NumDirect * SectorSize)
+#define NumDirect 	((SectorSize - 7 * sizeof(int)) / sizeof(int))
+#define NumInDirect (SectorSize / sizeof(int))
+#define MaxFileSize 	((NumDirect + NumInDirect) * SectorSize)
+
+typedef enum
+{
+	TYPE_FILE,
+	TYPE_DIR,
+	TYPE_PIPE,
+  TYPE_UNKNOWN
+}FileType;
 
 // The following class defines the Nachos "file header" (in UNIX terms,  
 // the "i-node"), describing where on disk to find all of the data in the file.
@@ -37,6 +46,7 @@
 
 class FileHeader {
   public:
+    FileHeader();
     bool Allocate(PersistentBitmap *bitMap, int fileSize);// Initialize a file header, 
 						//  including allocating space 
 						//  on disk for the file data
@@ -51,16 +61,26 @@ class FileHeader {
 					// to the disk sector containing
 					// the byte
 
-    int FileLength();			// Return the length of the file 
-					// in bytes
+    int FileLimit();
+    int FileCapacity();
 
     void Print();			// Print the contents of the file.
 
+    void selfTest(PersistentBitmap *freeMap);
+
   private:
-    int numBytes;			// Number of bytes in the file
-    int numSectors;			// Number of data sectors in the file
-    int dataSectors[NumDirect];		// Disk sector numbers for each data 
-					// block in the file
+    int limit;			// Number of bytes in the file
+    int capacity;
+    int nsectors;			// Number of data sectors in the file
+    // TODO:
+    // int nlink;
+
+    FileType type;
+    
+    int createTime;
+    int modifyTime;
+    
+    int dataSectors[NumDirect+1];	 //直接索引+1个间接索引
 };
 
 #endif // FILEHDR_H
