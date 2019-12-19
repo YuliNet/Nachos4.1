@@ -135,6 +135,9 @@ void FileHeader::Deallocate(PersistentBitmap *freeMap)
         freeMap->Clear(dataSectors[NumDirect]);
     }
     dataSectors[NumDirect] = 0;
+    limit = 0;
+    capacity = 0;
+    nsectors = 0;
 }
 
 //----------------------------------------------------------------------
@@ -198,6 +201,14 @@ int FileHeader::FileCapacity()
 {
     return capacity;
 }
+
+bool
+FileHeader::setFileLimit(int position)
+{
+    if (position < 0 || position > capacity)return FALSE;
+    limit = position;
+    return TRUE;
+}
 //----------------------------------------------------------------------
 // FileHeader::Print
 // 	Print the contents of the file header, and the contents of all
@@ -218,7 +229,7 @@ FileHeader::Print()
             cout << dataSectors[i] << ", ";
     }
     cout << endl;
-    if (dataSectors[NumInDirect] != 0)
+    if (nsectors > NumDirect)
     {
         cout << "File InDirectblocks:" << endl;
         int inDirect[NumInDirect] = {0};

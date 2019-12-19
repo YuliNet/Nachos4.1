@@ -17,7 +17,7 @@
 #include "disk.h"
 #include "pbitmap.h"
 
-#define NumDirect 	((SectorSize - 7 * sizeof(int)) / sizeof(int))
+#define NumDirect 	((SectorSize - 8 * sizeof(int)) / sizeof(int))
 #define NumInDirect (SectorSize / sizeof(int))
 #define MaxFileSize 	((NumDirect + NumInDirect) * SectorSize)
 
@@ -63,6 +63,11 @@ class FileHeader {
 
     int FileLimit();
     int FileCapacity();
+    bool setFileLimit(int position);
+
+    void setSelfSector(int sector) {selfSector = sector;}
+    int getSelfSector() {return selfSector;}
+
 
     void Print();			// Print the contents of the file.
 
@@ -72,6 +77,7 @@ class FileHeader {
     int limit;			// Number of bytes in the file
     int capacity;
     int nsectors;			// Number of data sectors in the file
+    int selfSector;
     // TODO:
     // int nlink;
 
