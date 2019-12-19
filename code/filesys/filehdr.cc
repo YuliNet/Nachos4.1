@@ -56,8 +56,12 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int size)
     //直接索引
     for (int i = nsectors; (i < NumDirect) && (n > 0); i++)
     {
+        // freeMap->Print();
         dataSectors[i] = freeMap->FindAndSet();
-        ASSERT(dataSectors[i] >= 0);
+        // cout << "***********" << endl;
+        // freeMap->Print();
+        // cout << dataSectors[i] << endl;
+        ASSERT(dataSectors[i] > 0);
         n--;
     }
     if (n == 0)
@@ -112,7 +116,7 @@ bool FileHeader::Allocate(PersistentBitmap *freeMap, int size)
 void FileHeader::Deallocate(PersistentBitmap *freeMap)
 {
     //回收直接块
-    for (int i = 0; i < NumDirect; i++)
+    for (int i = 0; i < nsectors && i < NumDirect; i++)
     {
         if (freeMap->Test(dataSectors[i]))
         {
@@ -123,7 +127,7 @@ void FileHeader::Deallocate(PersistentBitmap *freeMap)
     }
 
     //回收间接块
-    if (dataSectors[NumDirect] != 0)
+    if (nsectors > NumDirect)
     {
         int inDirect[NumInDirect];
         kernel->synchDisk->ReadSector(dataSectors[NumDirect], (char *)inDirect);
