@@ -115,15 +115,15 @@ OpenFile::Write(char *into, int numBytes)
 int
 OpenFile::ReadAt(char *into, int numBytes, int position)
 {
-    int fileLength = hdr->FileLength();
+    int fileLimit = hdr->FileLimit();
     int i, firstSector, lastSector, numSectors;
     char *buf;
 
-    if ((numBytes <= 0) || (position >= fileLength))
+    if ((numBytes <= 0) || (position < 0) || (position >= fileLimit))
     	return 0; 				// check request
-    if ((position + numBytes) > fileLength)		
-	numBytes = fileLength - position;
-    DEBUG(dbgFile, "Reading " << numBytes << " bytes at " << position << " from file of length " << fileLength);
+    if ((position + numBytes) > fileLimit)		
+	numBytes = fileLimit - position;
+    DEBUG(dbgFile, "Reading " << numBytes << " bytes at " << position << " from file of limit " << fileLimit);
 
     firstSector = divRoundDown(position, SectorSize);
     lastSector = divRoundDown(position + numBytes - 1, SectorSize);
@@ -144,16 +144,32 @@ OpenFile::ReadAt(char *into, int numBytes, int position)
 int
 OpenFile::WriteAt(char *from, int numBytes, int position)
 {
-    int fileLength = hdr->FileLength();
+    int fileLimit = hdr->FileLimit();
+    int fileCapacity = hdr->FileCapacity();
     int i, firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
 
-    if ((numBytes <= 0) || (position >= fileLength))
+    if ((numBytes <= 0) || (position > fileLimit) || (position < 0))
 	return 0;				// check request
-    if ((position + numBytes) > fileLength)
-	numBytes = fileLength - position;
-    DEBUG(dbgFile, "Writing " << numBytes << " bytes at " << position << " from file of length " << fileLength);
+    // 文件剩余空间不够，需要申请空间
+    if ((position + numBytes) > fileCapacity)
+    {
+        // cout << "allocate memory" << endl;
+        PersistentBitmap* freeMap = new PersistentBitmap(NumSectors);
+        OpenFile* freeMapFile = new OpenFile(0); //FreeMapSector:0
+        freeMap->FetchFrom(freeMapFile);
+        // cout << "***********" << endl;
+        // freeMap->Print();
+        ASSERT(hdr->Allocate(freeMap, position + numBytes - fileCapacity));
+        // hdr->setFileLimit(position + numBytes);
+        // hdr->WriteBack(hdr->getSelfSector());
+        freeMap->WriteBack(freeMapFile);
+    }
+    hdr->setFileLimit(position + numBytes);
+    hdr->WriteBack(hdr->getSelfSector());
+	// numBytes = fileLength - position;
+    DEBUG(dbgFile, "Writing " << numBytes << " bytes at " << position << " from file of limit " << fileLimit);
 
     firstSector = divRoundDown(position, SectorSize);
     lastSector = divRoundDown(position + numBytes - 1, SectorSize);
@@ -177,7 +193,7 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
 // write modified sectors back
     for (i = firstSector; i <= lastSector; i++)	
         kernel->synchDisk->WriteSector(hdr->ByteToSector(i * SectorSize), 
-					&buf[(i - firstSector) * SectorSize]);
+					&buf[(i - firstSector) * SectorSize]);    
     delete [] buf;
     return numBytes;
 }
@@ -190,7 +206,52 @@ OpenFile::WriteAt(char *from, int numBytes, int position)
 int
 OpenFile::Length() 
 { 
-    return hdr->FileLength(); 
+    return hdr->FileLimit(); 
 }
 
+
+#define Contents 	"1234567890"
+#define ContentSize 	strlen(Contents)
+#define FileSize 	((int)(ContentSize * 50))
+
+void
+OpenFile::selfTest()
+{
+    PersistentBitmap* freeMap = new PersistentBitmap(NumSectors);
+    OpenFile* file = new OpenFile(0);
+    freeMap->FetchFrom(file);
+    cout << "OpenFile selfTest:" << endl;
+    cout << "Before Test : " << endl;
+    freeMap->Print();
+    hdr->Print();
+
+    cout << "Write Test : " << endl;
+    
+    int i, numBytes;
+    char *buffer = new char[ContentSize];
+
+    for (i = 0; i < FileSize; i += ContentSize) {
+        numBytes = Write(Contents, ContentSize);
+        if (numBytes < 10) 
+        {
+            printf("Perf test: unable to write\n");
+        }
+    }
+    freeMap->FetchFrom(file);
+    freeMap->Print();
+    hdr->Print();
+
+    cout << "Read Test : " << endl;
+
+    seekPosition = 0;
+
+    for (i = 0; i < FileSize; i += ContentSize)
+    {
+        numBytes = Read(buffer, ContentSize);
+        if ((numBytes < 10) || strncmp(buffer, Contents, ContentSize)) 
+        {
+            printf("Perf test: unable to read\n");
+        }
+    }
+}
 #endif //FILESYS_STUB
