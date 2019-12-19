@@ -68,6 +68,9 @@ class FileHeader {
     void setSelfSector(int sector) {selfSector = sector;}
     int getSelfSector() {return selfSector;}
 
+    void setFileType(FileType type) {this->type = type;}
+    FileType getFileType() {return type;}
+
 
     void Print();			// Print the contents of the file.
 
