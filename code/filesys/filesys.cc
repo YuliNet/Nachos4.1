@@ -83,8 +83,7 @@ FileSystem::FileSystem(bool format)
     DEBUG(dbgFile, "Initializing the file system.");
     if (format) {
         PersistentBitmap *freeMap = new PersistentBitmap(NumSectors);
-        Directory *directory = new Directory(NumDirEntries);
-        directory->setSector(DirectorySector);
+        Directory *directory = new Directory(DirectorySector, NumDirEntries);
 	FileHeader *mapHdr = new FileHeader(FreeMapSector, TYPE_FILE);
 	FileHeader *dirHdr = new FileHeader(DirectorySector, TYPE_DIR);
 
@@ -205,14 +204,22 @@ FileSystem::Create(char *name, FileType type)
         else 
         {
             hdr = new FileHeader(sector, type);
-            success = TRUE;
             if (type == TYPE_DIR)
             {
                 success = hdr->Allocate(freeMap, DirectoryFileSize);
+                hdr->WriteBack(sector); //要先把hdr写回磁盘，因为newdir写回磁盘时会查hdr
+                Directory* newdir = new Directory(sector, NumDirEntries);
+                OpenFile* newfile = new OpenFile(sector);
+                newdir->WriteBack(newfile);
+                delete newdir;
+                delete newfile;
             }
             
-            hdr->WriteBack(sector);
-            // directory->WriteBack(directoryFile);
+            else if (type == TYPE_FILE)
+            {
+                hdr->WriteBack(sector);
+                success = TRUE;
+            }
             freeMap->WriteBack(freeMapFile);
             delete hdr;
         }
@@ -288,7 +295,6 @@ FileSystem::Remove(char *name)
     directory->Remove(name);
 
     freeMap->WriteBack(freeMapFile);		// flush to disk
-    directory->WriteBack(directoryFile);        // flush to disk
     delete fileHdr;
     delete directory;
     delete freeMap;
@@ -424,11 +430,13 @@ FileSystem::selfTest()
 
     // filesys test
     ASSERT(Create("/a", TYPE_DIR));
+    ASSERT(Create("/c", TYPE_FILE));
     Print();
-    ASSERT(Create("/a/b", TYPE_FILE));
-    OpenFile* b = Open("/a/b");
-    b->selfTest();
-    ASSERT(Remove("/a/b"));
+    // ASSERT(Create("/a/b", TYPE_FILE));
+    // OpenFile* b = Open("/a/b");
+    // b->selfTest();
+    // ASSERT(Remove("/a/b"));
+    ASSERT(Remove("/c"));
     Print();
 }
 

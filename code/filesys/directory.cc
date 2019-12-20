@@ -26,7 +26,17 @@
 
 Directory::Directory()
 {
-    tableSize = 10;
+    tableSize = 10; //NumDirEntries
+    table = new DirectoryEntry[tableSize];
+    
+    for (int i = 0; i < tableSize; i++)
+	table[i].inUse = FALSE;
+}
+
+Directory::Directory(int sector, int size)
+{
+    this->sector = sector;
+    tableSize = size;
     table = new DirectoryEntry[tableSize];
     for (int i = 0; i < tableSize; i++)
 	table[i].inUse = FALSE;
@@ -192,8 +202,8 @@ Directory::namex(char* path, int nameparent, char* name)
 
     OpenFile* nextDirOpenFile = new OpenFile(next);
     Directory* nextDir = new Directory();
-    nextDir->setSector(next);
     nextDir->FetchFrom(nextDirOpenFile);
+    // nextDir->setSector(next);
     delete nextDirOpenFile;
 
     int res =  nextDir->namex(path, nameparent, name);
