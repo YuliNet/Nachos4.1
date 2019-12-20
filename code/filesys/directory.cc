@@ -69,7 +69,9 @@ Directory::~Directory()
 void
 Directory::FetchFrom(OpenFile *file)
 {
-    (void) file->ReadAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+    
+    (void) file->ReadAt((char *)&sector, sizeof(int), 0);
+    (void) file->ReadAt((char *)table, tableSize * sizeof(DirectoryEntry), sizeof(int));
 }
 
 //----------------------------------------------------------------------
@@ -82,7 +84,8 @@ Directory::FetchFrom(OpenFile *file)
 void
 Directory::WriteBack(OpenFile *file)
 {
-    (void) file->WriteAt((char *)table, tableSize * sizeof(DirectoryEntry), 0);
+    (void) file->WriteAt((char *)&sector, sizeof(int), 0);
+    (void) file->WriteAt((char *)table, tableSize * sizeof(DirectoryEntry), sizeof(int));
 }
 
 //----------------------------------------------------------------------
@@ -106,15 +109,7 @@ Directory::FindIndex(char *name)
 int
 Directory::dirlookup(char* name)
 {
-    int k = -1;
-    for (int i = 0; i < tableSize; i++)
-    {
-        if (table[i].inUse && !strncmp(table[i].name, name, FileNameMaxLen))
-        {
-            k = i;
-            break;
-        }
-    }
+    int k = FindIndex(name);
 
     if (k != -1)
     {
@@ -255,6 +250,7 @@ Directory::Add(char *path, int newSector)
     char name[FileNameMaxLen];
     int psector = namex(path, 1, name);
     
+    // cout << "psector : " << psector << endl; 
     if (psector == -1)
         return FALSE;
     Directory* pdir = new Directory();
@@ -264,10 +260,6 @@ Directory::Add(char *path, int newSector)
     int res = pdir->AddInCurrentDir(name, newSector);
     if (res)
     {
-        // cout << "*********";
-        // pdir->Print();
-        // cout << "*********";
-
         pdir->WriteBack(pfile);
     }
     delete pfile;
@@ -342,8 +334,8 @@ Directory::Print()
     for (int i = 0; i < tableSize; i++)
 	if (table[i].inUse) {
 	    printf("Name: %s, Sector: %d\n", table[i].name, table[i].sector);
-	    // hdr->FetchFrom(table[i].sector);
-	    // hdr->Print();
+	    hdr->FetchFrom(table[i].sector);
+	    hdr->Print();
 	}
     printf("\n");
     delete hdr;

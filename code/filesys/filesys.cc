@@ -84,8 +84,9 @@ FileSystem::FileSystem(bool format)
     if (format) {
         PersistentBitmap *freeMap = new PersistentBitmap(NumSectors);
         Directory *directory = new Directory(NumDirEntries);
-	FileHeader *mapHdr = new FileHeader;
-	FileHeader *dirHdr = new FileHeader;
+        directory->setSector(DirectorySector);
+	FileHeader *mapHdr = new FileHeader(FreeMapSector, TYPE_FILE);
+	FileHeader *dirHdr = new FileHeader(DirectorySector, TYPE_DIR);
 
         DEBUG(dbgFile, "Formatting the file system.");
 
@@ -115,7 +116,6 @@ FileSystem::FileSystem(bool format)
 
         freeMapFile = new OpenFile(FreeMapSector);
         directoryFile = new OpenFile(DirectorySector);
-     
     // Once we have the files "open", we can write the initial version
     // of each file back to disk.  The directory at this point is completely
     // empty; but the bitmap has been changed to reflect the fact that
@@ -129,6 +129,7 @@ FileSystem::FileSystem(bool format)
 	if (debug->IsEnabled('f')) {
 	    freeMap->Print();
 	    directory->Print();
+        selfTest();
         }
         delete freeMap; 
 	delete directory; 
@@ -172,7 +173,7 @@ FileSystem::FileSystem(bool format)
 //----------------------------------------------------------------------
 
 bool
-FileSystem::Create(char *name, int initialSize)
+FileSystem::Create(char *name, FileType type)
 {
     Directory *directory;
     PersistentBitmap *freeMap;
@@ -180,33 +181,42 @@ FileSystem::Create(char *name, int initialSize)
     int sector;
     bool success;
 
-    DEBUG(dbgFile, "Creating file " << name << " size " << initialSize);
+    DEBUG(dbgFile, "Creating file " << name << " type " << type);
 
     directory = new Directory(NumDirEntries);
     directory->FetchFrom(directoryFile);
 
     if (directory->Find(name) != -1)
-      success = FALSE;			// file is already in directory
-    else {	
+    {
+        success = FALSE;			// file is already in directory
+    }
+    else 
+    {
         freeMap = new PersistentBitmap(freeMapFile,NumSectors);
         sector = freeMap->FindAndSet();	// find a sector to hold the file header
-    	if (sector == -1) 		
-            success = FALSE;		// no free block for file header 
+        if (sector == -1)
+        {
+            success = FALSE;		// no free block for file header
+        }
         else if (!directory->Add(name, sector))
+        {
             success = FALSE;	// no space in directory
-	else {
-    	    hdr = new FileHeader;
-	    if (!hdr->Allocate(freeMap, initialSize))
-            	success = FALSE;	// no space on disk for data
-	    else {	
-	    	success = TRUE;
-		// everthing worked, flush all changes back to disk
-    	    	hdr->WriteBack(sector); 		
-    	    	directory->WriteBack(directoryFile);
-    	    	freeMap->WriteBack(freeMapFile);
-	    }
+        }
+        else 
+        {
+            hdr = new FileHeader(sector, type);
+            success = TRUE;
+            if (type == TYPE_DIR)
+            {
+                success = hdr->Allocate(freeMap, DirectoryFileSize);
+            }
+            
+            hdr->WriteBack(sector);
+            // directory->WriteBack(directoryFile);
+            freeMap->WriteBack(freeMapFile);
             delete hdr;
-	}
+        }
+
         delete freeMap;
     }
     delete directory;
@@ -335,6 +345,91 @@ FileSystem::Print()
     delete dirHdr;
     delete freeMap;
     delete directory;
-} 
+}
+
+void
+FileSystem::selfTest()
+{
+    cout << "FileSystem Test" << endl;
+    
+    // cout << "FileHeader test" << endl;
+    // testFileHdr->setSelfSector(testFileSector);
+    // testFileHdr->selfTest(freeMap);
+    // testFileHdr->WriteBack(testFileSector);
+    
+    
+    // 初始环境
+    // FileHeader* testFileHdr = new FileHeader;
+    // PersistentBitmap *freeMap = new PersistentBitmap(freeMapFile,NumSectors);
+    // freeMap->Print();
+    // int testFileSector = freeMap->FindAndSet();
+    // testFileHdr->setSelfSector(testFileSector);
+    // testFileHdr->FetchFrom(testFileSector);
+    // testFileHdr->Deallocate(freeMap);
+    // testFileHdr->WriteBack(testFileSector);
+    // freeMap->WriteBack(freeMapFile);
+
+    // cout << "OpenFile Test" << endl;
+    
+    // OpenFile* testFile = new OpenFile(testFileSector);
+    // testFile->selfTest();
+
+    //Directory test
+    // PersistentBitmap* freeMap = new PersistentBitmap(NumSectors);
+    // freeMap->FetchFrom(freeMapFile);
+    // Directory* root = new Directory();
+    // root->FetchFrom(directoryFile);
+    // root->setSector(DirectorySector);
+    // cout << "初始环境：" << endl;
+    // freeMap->Print();
+    // root->Print();
+    // cout << "=================" << endl;
+
+    // cout << "在根目录下创建目录a" << endl;
+    // int asector = freeMap->FindAndSet();
+    // FileHeader* aHdr = new FileHeader;
+    // ASSERT(aHdr->Allocate(freeMap, DirectoryFileSize));
+    // aHdr->setSelfSector(asector);
+    // aHdr->setFileType(TYPE_DIR);
+    // ASSERT(root->Add("/a", asector));
+    // freeMap->Print();
+    // root->FetchFrom(directoryFile);
+    // root->Print();
+    // aHdr->WriteBack(asector);
+    // // freeMap->WriteBack(freeMapFile);
+    // cout << "=================" << endl;
+
+
+    // cout << "在目录a下创建文件b" << endl;
+    // Directory* a = new Directory();
+    // OpenFile* afile = new OpenFile(asector);
+    // a->WriteBack(afile);    //清空原始扇区
+    // int bSector = freeMap->FindAndSet();
+    // FileHeader* bHdr = new FileHeader;
+    // bHdr->setSelfSector(bSector);
+    // bHdr->setFileType(TYPE_FILE);
+    // ASSERT(root->Add("/a/b", bSector));
+    // freeMap->Print();
+    // root->Print();
+    // a->FetchFrom(afile);
+    // a->Print();
+    // cout << "=================" << endl;
+
+    // cout << "删除a目录下的文件b" << endl;
+    // root->Remove("a/b");
+    // a->FetchFrom(afile);
+    // a->Print();
+
+
+
+    // filesys test
+    ASSERT(Create("/a", TYPE_DIR));
+    Print();
+    ASSERT(Create("/a/b", TYPE_FILE));
+    OpenFile* b = Open("/a/b");
+    b->selfTest();
+    ASSERT(Remove("/a/b"));
+    Print();
+}
 
 #endif // FILESYS_STUB

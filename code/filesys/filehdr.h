@@ -47,6 +47,7 @@ typedef enum
 class FileHeader {
   public:
     FileHeader();
+    FileHeader(int selfsector, FileType type);
     bool Allocate(PersistentBitmap *bitMap, int fileSize);// Initialize a file header, 
 						//  including allocating space 
 						//  on disk for the file data

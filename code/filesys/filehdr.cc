@@ -38,6 +38,17 @@ FileHeader::FileHeader()
     createTime = kernel->stats->totalTicks;
 }
 
+FileHeader::FileHeader(int selfSector, FileType type)
+{
+    limit = 0;
+    capacity = 0;
+    nsectors = 0;
+    this->selfSector = selfSector;
+    this->type = type;
+    memset(dataSectors, 0, sizeof(dataSectors));
+    createTime = kernel->stats->totalTicks;
+}
+
 //----------------------------------------------------------------------
 //申请fileSize个字节(设计为在文件空间不够时追加申请，在刚完成文件创建时不用再指定文件初始大小，一律为0)
 //----------------------------------------------------------------------
@@ -45,7 +56,8 @@ FileHeader::FileHeader()
 bool FileHeader::Allocate(PersistentBitmap *freeMap, int size)
 {
     //边界情况处理
-    if (size <= 0 || (size + capacity) > MaxFileSize)
+    if (size == 0)return TRUE;
+    if (size < 0 || (size + capacity) > MaxFileSize)
         return FALSE;
 
     int n = divRoundUp(size, SectorSize);
