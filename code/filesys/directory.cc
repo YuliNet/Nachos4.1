@@ -346,6 +346,15 @@ Directory::Print()
 	    printf("Name: %s, Sector: %d\n", table[i].name, table[i].sector);
 	    hdr->FetchFrom(table[i].sector);
 	    hdr->Print();
+        if (hdr->getFileType() == TYPE_DIR)
+        {
+            Directory* subdir = new Directory();
+            OpenFile* subdirfile = new OpenFile(table[i].sector);
+            subdir->FetchFrom(subdirfile);
+            subdir->Print();
+            delete subdir;
+            delete subdirfile;
+        }
 	}
     printf("\n");
     delete hdr;
