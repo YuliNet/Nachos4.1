@@ -15,6 +15,7 @@
 #include "synch.h"
 #include "callback.h"
 
+#define DiskCacheSize 4 
 // The following class defines a "synchronous" disk abstraction.
 // As with other I/O devices, the raw physical disk is an asynchronous device --
 // requests to read or write portions of the disk return immediately,
@@ -25,6 +26,14 @@
 // This class provides the abstraction that for any individual thread
 // making a request, it waits around until the operation finishes before
 // returning.
+struct DiskCacheEntry
+{
+  int valid;
+  int dirty;
+  int sector;
+  int lru;
+  char data[SectorSize];
+};
 
 class SynchDisk : public CallBackObj {
   public:
@@ -50,6 +59,8 @@ class SynchDisk : public CallBackObj {
 					// with the interrupt handler
     Lock *lock;		  		// Only one read/write request
 					// can be sent to the disk at a time
+
+    DiskCacheEntry cache[DiskCacheSize];
 };
 
 #endif // SYNCHDISK_H

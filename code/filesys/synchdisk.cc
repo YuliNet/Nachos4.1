@@ -30,6 +30,11 @@ SynchDisk::SynchDisk()
     semaphore = new Semaphore("synch disk", 0);
     lock = new Lock("synch disk lock");
     disk = new Disk(this);
+
+    for (int i = 0; i < DiskCacheSize; i++)
+    {
+        cache[i].valid = -1;
+    }
 }
 
 //----------------------------------------------------------------------
@@ -58,8 +63,54 @@ void
 SynchDisk::ReadSector(int sectorNumber, char* data)
 {
     lock->Acquire();			// only one disk I/O at a time
-    disk->ReadRequest(sectorNumber, data);
-    semaphore->P();			// wait for interrupt
+
+    int index = -1;
+    // 先查磁盘高速缓存
+    for (int i = 0; i < DiskCacheSize; i++)
+    {
+        if (cache[i].valid == 1 && cache[i].sector == sectorNumber)
+        {
+            index = i;
+            break;
+        }
+    }
+
+    if (index != -1)    //cache hit
+    {
+        cout << "********disk cache hit********" << endl;
+        bcopy(cache[index].data, data, SectorSize);
+        cache[index].lru = kernel->stats->totalTicks;
+
+    }
+    else //cache miss
+    {
+        disk->ReadRequest(sectorNumber, data);
+
+        int swap = 0;
+        for (int i = 0; i < DiskCacheSize; i++)
+        {
+            if (cache[i].valid == 0)
+            {
+                swap = i;
+                break;
+            }
+            else
+            {
+                if (cache[i].lru < cache[swap].lru)
+                {
+                    swap = i;
+                }
+            }
+        }
+
+        cache[swap].valid = 1;
+        cache[swap].dirty = 0;
+        cache[swap].sector = sectorNumber;
+        cache[swap].lru = kernel->stats->totalTicks;
+        bcopy(data, cache[swap].data, SectorSize);
+
+        semaphore->P();			// wait for interrupt
+    }
     lock->Release();
 }
 
@@ -77,6 +128,13 @@ SynchDisk::WriteSector(int sectorNumber, char* data)
 {
     lock->Acquire();			// only one disk I/O at a time
     disk->WriteRequest(sectorNumber, data);
+    for (int i = 0; i < DiskCacheSize; i++)
+    {
+        if (cache[i].sector == sectorNumber)
+        {
+            cache[i].valid = -1;
+        }
+    }
     semaphore->P();			// wait for interrupt
     lock->Release();
 }
