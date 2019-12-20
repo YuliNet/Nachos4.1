@@ -57,6 +57,7 @@
 // sectors, so that they can be located on boot-up.
 #define FreeMapSector 		0
 #define DirectorySector 	1
+#define PipeSector          2
 
 // Initial file sizes for the bitmap and directory; until the file system
 // supports extensible files, the directory size sets the maximum number 
@@ -64,6 +65,7 @@
 #define FreeMapFileSize 	(NumSectors / BitsInByte)
 #define NumDirEntries 		10
 #define DirectoryFileSize 	(sizeof(DirectoryEntry) * NumDirEntries)
+#define PipeFileSize        1024
 
 //----------------------------------------------------------------------
 // FileSystem::FileSystem
@@ -86,6 +88,7 @@ FileSystem::FileSystem(bool format)
         Directory *directory = new Directory(DirectorySector, NumDirEntries);
 	FileHeader *mapHdr = new FileHeader(FreeMapSector, TYPE_FILE);
 	FileHeader *dirHdr = new FileHeader(DirectorySector, TYPE_DIR);
+    FileHeader* pipeHdr = new FileHeader(PipeSector, TYPE_PIPE);
 
         DEBUG(dbgFile, "Formatting the file system.");
 
@@ -93,12 +96,14 @@ FileSystem::FileSystem(bool format)
     // (make sure no one else grabs these!)
 	freeMap->Mark(FreeMapSector);	    
 	freeMap->Mark(DirectorySector);
+    freeMap->Mark(PipeSector);
 
     // Second, allocate space for the data blocks containing the contents
     // of the directory and bitmap files.  There better be enough space!
 
 	ASSERT(mapHdr->Allocate(freeMap, FreeMapFileSize));
 	ASSERT(dirHdr->Allocate(freeMap, DirectoryFileSize));
+    ASSERT(pipeHdr->Allocate(freeMap, PipeFileSize));
 
     // Flush the bitmap and directory FileHeaders back to disk
     // We need to do this before we can "Open" the file, since open
@@ -108,6 +113,7 @@ FileSystem::FileSystem(bool format)
         DEBUG(dbgFile, "Writing headers back to disk.");
 	mapHdr->WriteBack(FreeMapSector);    
 	dirHdr->WriteBack(DirectorySector);
+    pipeHdr->WriteBack(PipeSector);
 
     // OK to open the bitmap and directory files now
     // The file system operations assume these two files are left open
@@ -353,6 +359,26 @@ FileSystem::Print()
     delete directory;
 }
 
+int
+FileSystem::ReadPipe(char* data)
+{
+    FileHeader* pipehdr = new FileHeader();
+    pipehdr->FetchFrom(PipeSector);
+    OpenFile* pipefile = new OpenFile(PipeSector);
+    int res = pipefile->ReadAt(data, pipehdr->FileLimit(), 0);
+    delete pipehdr;
+    delete pipefile;
+    return res;
+}
+
+void
+FileSystem::WritePipe(char* data, int length)
+{
+    OpenFile* pipefile = new OpenFile(PipeSector);
+    pipefile->WriteAt(data, length, 0);
+    delete pipefile;
+}
+
 void
 FileSystem::selfTest()
 {
@@ -429,15 +455,30 @@ FileSystem::selfTest()
 
 
     // filesys test
-    ASSERT(Create("/a", TYPE_DIR));
-    ASSERT(Create("/c", TYPE_FILE));
-    Print();
+    // ASSERT(Create("/a", TYPE_DIR));
+    // ASSERT(Create("/c", TYPE_FILE));
+    // Print();
     // ASSERT(Create("/a/b", TYPE_FILE));
-    // OpenFile* b = Open("/a/b");
-    // b->selfTest();
+    // Print();
+    // // OpenFile* b = Open("/a/b");
+    // // b->selfTest();
     // ASSERT(Remove("/a/b"));
-    ASSERT(Remove("/c"));
-    Print();
+    // Print();
+    // ASSERT(Remove("/c"));
+    // Print();
+
+
+    // pipe test
+    char str[SectorSize+1];
+    cout << "input : " << endl;
+    cin >> str;
+    WritePipe(str, strlen(str));
+
+    cout << "output : " << endl;
+    char str2[SectorSize+1];
+    int length = ReadPipe(str2);
+    cout << str2 << endl;
+
 }
 
 #endif // FILESYS_STUB

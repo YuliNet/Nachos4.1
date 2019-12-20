@@ -83,15 +83,17 @@ class FileSystem {
 
 	bool Close(char* name);
 
+	int ReadPipe(char* data);
+	void WritePipe(char* data, int length);
     void List();			// List all the files in the file system
 
     void Print();			// List all the files and their contents
 
 	void selfTest();
   private:
-   OpenFile* freeMapFile;		// Bit map of free disk blocks,
+	OpenFile* freeMapFile;		// Bit map of free disk blocks,
 					// represented as a file
-   OpenFile* directoryFile;		// "Root" directory -- list of 
+	OpenFile* directoryFile;		// "Root" directory -- list of 
 					// file names, represented as a file
 };
 
