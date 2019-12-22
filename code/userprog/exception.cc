@@ -25,6 +25,9 @@
 #include "main.h"
 #include "syscall.h"
 #include "ksyscall.h"
+#include "directory.h"
+
+void FileSystemHandler(int type);
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -53,7 +56,7 @@ ExceptionHandler(ExceptionType which)
 {
     int type = kernel->machine->ReadRegister(2);
 
-    DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
+    // DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
 
     switch (which) {
     case SyscallException:
@@ -79,22 +82,25 @@ ExceptionHandler(ExceptionType which)
 	kernel->machine->WriteRegister(2, (int)result);
 	
 	/* Modify return point */
-	{
-	  /* set previous programm counter (debugging only)*/
-	  kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-
-	  /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
-	  kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-	  
-	  /* set next programm counter for brach execution */
-	  kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg)+4);
-	}
+	kernel->machine->PCAdvanced();
 
 	return;
 	
 	ASSERTNOTREACHED();
 
 	break;
+
+	case SC_Create :
+	case SC_Remove :
+	case SC_Open :
+	case SC_Read :
+	case SC_Write :
+	case SC_Seek :
+	case SC_Close :
+		FileSystemHandler(type);
+		return;
+		ASSERTNOTREACHED();
+		break;
 
       default:
 	cerr << "Unexpected system call " << type << "\n";
@@ -106,4 +112,112 @@ ExceptionHandler(ExceptionType which)
       break;
     }
     ASSERTNOTREACHED();
+}
+
+// Helper function to get file name using ReadMem for Create and Open syscall
+char* getFileNameFromAddress(int address) {
+    int position = 0;
+    int data;
+    char* name = new char[FileNameMaxLen + 1];
+    do {
+        // each time read one byte
+        bool success = kernel->machine->ReadMem(address + position, 1, &data);
+        // ASSERT_MSG(success, "Fail to read memory in Create syscall");
+        name[position++] = (char)data;
+
+        // ASSERT_MSG(position <= FileNameMaxLength, "Filename length too long")
+    } while(data != '\0');
+    name[position] = '\0';
+    return name;
+}
+
+void FileSystemHandler(int type)
+{
+	if (type == SC_Create)
+	{
+		int address = kernel->machine->ReadRegister(4);
+		char* name = getFileNameFromAddress(address);
+		bool success = kernel->fileSystem->Create(name, 1024);
+		if (success)
+		{
+			DEBUG(dbgSys, "File " << name << " created.");
+		}
+		else
+		{
+			DEBUG(dbgSys, "File " << name << " fail to create.");
+		}
+		kernel->machine->WriteRegister(2, (int)success);
+	}
+	else if (type == SC_Open)
+	{
+		int address = kernel->machine->ReadRegister(4);
+		char* name = getFileNameFromAddress(address);
+		OpenFile* openfile = kernel->fileSystem->Open(name);
+		DEBUG(dbgSys, "File " << name << " opened.");
+		kernel->machine->WriteRegister(2, (int)openfile);
+	}
+	else if(type == SC_Read)
+	{
+		int position = kernel->machine->ReadRegister(4);
+		int numBytes = kernel->machine->ReadRegister(5);
+		int openfileId = kernel->machine->ReadRegister(6);
+
+		OpenFile* openfile = (OpenFile*) openfileId;
+		char buffer[numBytes];
+		int result = openfile->Read(buffer, numBytes);
+		for (int i = 0; i < result; i++)
+		{
+			kernel->machine->WriteMem(position+i, 1, int(buffer[i]));
+		}
+		DEBUG(dbgSys, "Read " << result << " bytes into buffer.");
+		kernel->machine->WriteRegister(2, result);
+	}
+	else if(type == SC_Write)
+	{
+		int position = kernel->machine->ReadRegister(4);
+		int numBytes = kernel->machine->ReadRegister(5);
+		int openfileId = kernel->machine->ReadRegister(6);
+		int data;
+		char buffer[numBytes];
+		for (int i = 0; i < numBytes; i++)
+		{
+			kernel->machine->ReadMem(position+i, 1, &data);
+			buffer[i] = (char)data;
+		}
+
+		OpenFile* openfile = (OpenFile*) openfileId;
+		int result = openfile->Write(buffer, numBytes);
+		DEBUG(dbgSys, "Write " << result << " bytes into file.");
+		kernel->machine->WriteRegister(2, result);
+	}
+	else if(type == SC_Close)
+	{
+		int openfileId = kernel->machine->ReadRegister(4);
+		OpenFile* openfile = (OpenFile*) openfileId;
+		delete openfile;
+		//TODO:判断close 失败情况
+		DEBUG(dbgSys, "File has closed.");
+		kernel->machine->WriteRegister(2, 1);
+	}
+	else if(type == SC_Remove)
+	{
+		int address = kernel->machine->ReadRegister(4);
+		char* name = getFileNameFromAddress(address);
+		bool success = kernel->fileSystem->Remove(name);
+		if (success)
+		{
+			DEBUG(dbgSys, "File " << name << " has removed.");
+		}
+		else
+		{
+			DEBUG(dbgSys, "File " << name << " fail to remove.");
+		}
+		kernel->machine->WriteRegister(2, (int)success);
+	}
+
+	else
+	{
+		cerr << "no handler" << endl;
+	}
+	kernel->machine->PCAdvanced();
 }

@@ -23,7 +23,7 @@
 #define SC_Exec		2
 #define SC_Join		3
 #define SC_Create	4
-#define SC_Remove       5
+#define SC_Remove   5
 #define SC_Open		6
 #define SC_Read		7
 #define SC_Write	8
@@ -128,7 +128,7 @@ int Remove(char *name);
 #define RO 1
 #define RW 2
 #define APPEND 3
-OpenFileId Open(char *name, int mode);
+OpenFileId Open(char *name);
 
 /* Write "size" bytes from "buffer" to the open file. 
  * Return the number of bytes actually read on success.
