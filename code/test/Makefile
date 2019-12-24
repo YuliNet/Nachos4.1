@@ -11,7 +11,7 @@ INCDIR =-I../userprog -I../lib
 CFLAGS = -G 0 -O3 -ggdb -c $(INCDIR)
 
 # list of all application sources
-SOURCES = add.c halt.c matmult.c shell.c sort.c
+SOURCES = filesyscall.c threadsyscall.c mytest.c
 
 # automatically generated lists of intermediary files
 OBJS = ${SOURCES:.c=.o}
@@ -71,4 +71,3 @@ start.o: start.s ../userprog/syscall.h
 
 # next are automatically generated dependencies
 # DO NOT DELETE
-

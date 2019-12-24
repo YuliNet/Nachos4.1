@@ -21,6 +21,7 @@
 class AddrSpace {
   public:
     AddrSpace();			// Create an address space.
+    AddrSpace(AddrSpace* space);
     ~AddrSpace();			// De-allocate an address space
 
     bool Load(char *fileName);		// Load a program into addr space from
@@ -48,6 +49,13 @@ class AddrSpace {
     void InitRegisters();		// Initialize user-level CPU registers,
 					// before jumping to user code
 
+};
+
+class space_pc
+{
+  public:
+    AddrSpace* space;
+    int pc;
 };
 
 #endif // ADDRSPACE_H

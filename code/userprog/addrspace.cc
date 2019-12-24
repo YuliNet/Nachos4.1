@@ -81,6 +81,20 @@ AddrSpace::AddrSpace()
     bzero(kernel->machine->mainMemory, MemorySize);
 }
 
+AddrSpace::AddrSpace(AddrSpace* space)
+{
+    pageTable = new TranslationEntry[NumPhysPages];
+    for (int i = 0; i < NumPhysPages; i++)
+    {
+        pageTable[i].virtualPage = space->pageTable[i].virtualPage;
+        pageTable[i].physicalPage = space->pageTable[i].physicalPage;
+        pageTable[i].valid = space->pageTable[i].valid;
+        pageTable[i].use = space->pageTable[i].use;
+        pageTable[i].dirty = space->pageTable[i].dirty;
+        pageTable[i].readOnly = space->pageTable[i].readOnly;
+    }
+    numPages = space->numPages;
+}
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
 // 	Dealloate an address space.

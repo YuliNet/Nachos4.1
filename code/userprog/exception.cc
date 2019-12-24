@@ -28,6 +28,7 @@
 #include "directory.h"
 
 void FileSystemHandler(int type);
+void ThreadHandler(int type);
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -101,6 +102,15 @@ ExceptionHandler(ExceptionType which)
 		return;
 		ASSERTNOTREACHED();
 		break;
+	case SC_Exec:
+	case SC_ThreadFork:
+	case SC_ThreadYield:
+	case SC_ThreadJoin:
+	case SC_ThreadExit:
+		ThreadHandler(type);
+		return;
+		ASSERTNOTREACHED();
+		break;
 
       default:
 	cerr << "Unexpected system call " << type << "\n";
@@ -147,6 +157,7 @@ void FileSystemHandler(int type)
 			DEBUG(dbgSys, "File " << name << " fail to create.");
 		}
 		kernel->machine->WriteRegister(2, (int)success);
+		kernel->machine->PCAdvanced();
 	}
 	else if (type == SC_Open)
 	{
@@ -155,6 +166,7 @@ void FileSystemHandler(int type)
 		OpenFile* openfile = kernel->fileSystem->Open(name);
 		DEBUG(dbgSys, "File " << name << " opened.");
 		kernel->machine->WriteRegister(2, (int)openfile);
+		kernel->machine->PCAdvanced();
 	}
 	else if(type == SC_Read)
 	{
@@ -171,6 +183,7 @@ void FileSystemHandler(int type)
 		}
 		DEBUG(dbgSys, "Read " << result << " bytes into buffer.");
 		kernel->machine->WriteRegister(2, result);
+		kernel->machine->PCAdvanced();
 	}
 	else if(type == SC_Write)
 	{
@@ -189,6 +202,7 @@ void FileSystemHandler(int type)
 		int result = openfile->Write(buffer, numBytes);
 		DEBUG(dbgSys, "Write " << result << " bytes into file.");
 		kernel->machine->WriteRegister(2, result);
+		kernel->machine->PCAdvanced();
 	}
 	else if(type == SC_Close)
 	{
@@ -198,6 +212,7 @@ void FileSystemHandler(int type)
 		//TODO:判断close 失败情况
 		DEBUG(dbgSys, "File has closed.");
 		kernel->machine->WriteRegister(2, 1);
+		kernel->machine->PCAdvanced();
 	}
 	else if(type == SC_Remove)
 	{
@@ -213,6 +228,7 @@ void FileSystemHandler(int type)
 			DEBUG(dbgSys, "File " << name << " fail to remove.");
 		}
 		kernel->machine->WriteRegister(2, (int)success);
+		kernel->machine->PCAdvanced();
 	}
 
 	else
@@ -220,4 +236,150 @@ void FileSystemHandler(int type)
 		cerr << "no handler" << endl;
 	}
 	kernel->machine->PCAdvanced();
+}
+
+void exec_func(int address)
+{
+	char* name = getFileNameFromAddress(address);
+	AddrSpace* space = new AddrSpace();
+	space->Load(name);
+	space->Execute();
+}
+
+void fork_func(void* sp)
+{
+	space_pc* ptr = (space_pc*)sp;
+	AddrSpace* t = ptr->space;
+	AddrSpace* space = new AddrSpace(t);
+	kernel->currentThread->space = space;
+	int pc = ptr->pc;
+	kernel->machine->WriteRegister(PCReg, pc);
+	kernel->machine->WriteRegister(NextPCReg, pc+4);
+	kernel->currentThread->SaveUserState();
+	kernel->machine->Run();
+}
+
+void ThreadHandler(int type)
+{
+	if (type == SC_Exec)
+	{
+		int address = kernel->machine->ReadRegister(4);
+		Thread* newThread = new Thread("second thread");
+		
+		bool found;
+		for (int i = 0; i < MaxChild; i++)
+		{
+			if (kernel->currentThread->child[i] == NULL)
+			{
+				kernel->currentThread->child[i] = newThread;
+				kernel->machine->WriteRegister(2, (int)newThread);
+				found = TRUE;
+				break;
+			}
+		}
+		if (!found)
+		{
+			cerr << "current thread is full of children! Exec failed" << endl;
+			kernel->machine->PCAdvanced();
+			return;
+		}
+		newThread->father = kernel->currentThread;
+		newThread->Fork((VoidFunctionPtr)exec_func, (void*)address);
+		kernel->machine->PCAdvanced();
+	}
+	else if (type == SC_ThreadJoin)
+	{
+		ThreadId id = kernel->machine->ReadRegister(4);
+		Thread* child = (Thread*)id;
+		bool found = false;
+		int index;
+		for (int i = 0; i < MaxChild; i++)
+		{
+			if (kernel->currentThread->child[i] == child)
+			{
+				index = i;
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+		{
+			cerr << "cannot find this thread! Join failed!" << endl;
+			
+			kernel->machine->PCAdvanced();
+			return;
+		}
+		while (kernel->currentThread->child[index] != NULL)
+		{
+			cout << "thread is waiting for its child thread : " << kernel->currentThread->child[index]->getName() << endl;
+			kernel->currentThread->Yield();
+		}
+		cout << "child thread is finished! Join success!" << endl;
+		kernel->machine->PCAdvanced();
+	}
+	else if(type == SC_ThreadYield)
+	{
+		kernel->machine->PCAdvanced();
+		cout << kernel->currentThread->getName() << " thread yield" << endl;
+		kernel->currentThread->Yield();
+	}
+	else if(type == SC_ThreadExit)
+	{
+		if (kernel->currentThread->father != kernel->currentThread)
+		{
+			bool found = false;
+			int index;
+			for (int i = 0; i < MaxChild; i++)
+			{
+				if (kernel->currentThread->father->child[i] == kernel->currentThread)
+				{
+					found  = true;
+					index = i;
+					break;
+				}
+			}
+			if (!found)
+			{
+				cerr << "father and child ptr error" << endl;
+				kernel->machine->PCAdvanced();
+				return;
+			}
+			kernel->currentThread->father->child[index] = NULL;
+			kernel->machine->PCAdvanced();
+			kernel->currentThread->Finish();
+		}
+		else
+		{
+			kernel->machine->PCAdvanced();
+			kernel->currentThread->Finish();
+		}
+	}
+	else if(type == SC_ThreadFork)
+	{
+		int funcPC = kernel->machine->ReadRegister(4);
+		space_pc* sp = new space_pc();
+		sp->space = kernel->currentThread->space;
+		sp->pc = funcPC;
+
+		Thread* newThread = new Thread("second thread");
+		bool found =false;
+		for (int i = 0; i < MaxChild; i++)
+		{
+			if (kernel->currentThread->child[i] == NULL)
+			{
+				kernel->currentThread->child[i] = newThread;
+				kernel->machine->WriteRegister(2, (int)newThread);
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+		{
+			cerr << "current thread is full of children. Fork failed" << endl;
+			kernel->machine->PCAdvanced();
+			return;
+		}
+		newThread->father = kernel->currentThread;
+		newThread->Fork((VoidFunctionPtr)fork_func, (void*) sp);
+	}
 }
