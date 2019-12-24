@@ -223,3 +223,13 @@ Machine::WriteRegister(int num, int value)
     registers[num] = value;
 }
 
+void
+Machine::PCAdvanced()
+{
+    /* set previous programm counter (debugging only)*/
+	WriteRegister(PrevPCReg, ReadRegister(PCReg));
+	/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+	WriteRegister(PCReg, ReadRegister(PCReg) + 4);
+	/* set next programm counter for brach execution */
+	WriteRegister(NextPCReg, ReadRegister(PCReg)+4);
+}

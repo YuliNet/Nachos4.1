@@ -143,6 +143,7 @@ class Machine {
     				// Read or write 1, 2, or 4 bytes of virtual 
 				// memory (at addr).  Return FALSE if a 
 				// correct translation couldn't be found.
+	void PCAdvanced();
   private:
 
 // Routines internal to the machine simulation -- DO NOT call these directly
